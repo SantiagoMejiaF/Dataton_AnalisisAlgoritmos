@@ -1,7 +1,7 @@
 import pulp
 import pandas as pd
 
-dataton2023 = 'Dataton2023_Etapa1.xlsx'
+dataton2023 = './ejemplos/PuLP/Dataton2023_Etapa1.xlsx'
 
 demanda_df = pd.read_excel(dataton2023, sheet_name='demand')
 trabajadores_df = pd.read_excel(dataton2023, sheet_name='workers')
@@ -98,7 +98,7 @@ data = {'suc_code': suc_codeOptimo, 'documento': documentoOptimo, 'fecha': fecha
 solucionOptima = pd.DataFrame(data)
 solucionOptima = solucionOptima.sort_values(by=['documento','hora_franja'])
 
-solucionOptima.to_excel("solucionOptima.xlsx", index=False)
+solucionOptima.to_excel("./ejemplos/PuLP/solucionOptima.xlsx", index=False)
 
 print("Asignación Óptima de Horarios realizada")
 
