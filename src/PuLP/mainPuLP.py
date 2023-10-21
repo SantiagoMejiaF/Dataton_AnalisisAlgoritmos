@@ -369,4 +369,11 @@ final = True
 optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas)
 
 print(iniciosAlmuerzos)
-print(iniciosJornadas)
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import Solucion
+df_solucion = pd.read_excel('.\src\PuLP\solucionOptima.xlsx')
+Solucion.mostrarSolucion(df_solucion)
