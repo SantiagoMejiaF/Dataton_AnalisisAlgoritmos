@@ -47,6 +47,7 @@ def agregarRestriccionFranjaAtendidaTrabajadorModelo(trabajadores, franjas, x):
         problem += pulp.lpSum(x[(i, t)] for i in trabajadores) >= 1
 
 
+# (Temporal) Ya no se está usando esta función pero es para tenerla como referencia
 def agregarRestriccionAlmuerzoModelo(trabajadores, franjas, x):
     ## El almurzo debe ser entre 11:30 (Flanja 16) y maximo hasta las 15:00 (Flanja 30 no inclusive)
     ## entonces entre esas 14 franjas debe descansar 6 franjas para el almuerzo, 
@@ -70,7 +71,80 @@ def agregarRestriccionAlmuerzoContinuoModelo(trabajadores, franjas, x, iniciosAl
             # El trabajador no puede trabajar durante las 6 franjas del almuerzo
             problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaInicial:flanjaInicial+6]) == 0
 
+def agregarRestriccionTrabajaContinuoAntesDespuesAlmuerzoModelo(trabajadores, franjas, x, iniciosAlmuerzos):
+    global problem
 
+    for indexTrabajador in range(len(trabajadores)):
+        # Diferente a -1 es porque se sabe cuando inicia a almorzar ese trabajador
+        # En caso contrario, no se sabe
+        flanjaInicial = iniciosAlmuerzos[indexTrabajador]
+        if (flanjaInicial != -1):
+            # Cada trabajador tiene que trabajar 1 hora continua antes y despues de almorzar
+            problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaInicial-4:flanjaInicial]) == 4
+            problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaInicial+6:flanjaInicial+10]) == 4
+
+
+def agregarRestriccionNoTrabajaAntesInicioJornadaModelo(trabajadores, franjas, x, iniciosJornadas):
+    global problem
+
+    for indexTrabajador in range(len(trabajadores)):
+        # Diferente a -1 es porque se sabe cuando inicia la jornada ese trabajador
+        # En caso contrario, no se sabe
+        flanjaInicial = iniciosJornadas[indexTrabajador]
+        if (flanjaInicial != -1):
+            # El trabajador no puede trabajar antes de iniciar de jornada
+            problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[0:flanjaInicial]) == 0
+
+
+def agregarRestriccionNoTrabajaDespuesFinalJornadaModelo(trabajadores, franjas, x, iniciosJornadas):
+    global problem
+
+    for indexTrabajador in range(len(trabajadores)):
+        # Diferente a -1 es porque se sabe cuando inicia la jornada ese trabajador
+        # En caso contrario, no se sabe
+        flanjaInicial = iniciosJornadas[indexTrabajador]
+        if (flanjaInicial != -1):
+            # El trabajador no puede trabajar despues de finalizar su jornada
+            # El trabajador finaliza su jornada 38 flanjas despues de iniciar la jornada
+            problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaInicial+38:len(franjas)]) == 0
+
+
+def agregarRestriccionTrabajaContinuoExtremosJornadaModelo(trabajadores, franjas, x, iniciosJornadas):
+    global problem
+
+    for indexTrabajador in range(len(trabajadores)):
+        # Diferente a -1 es porque se sabe cuando inicia la jornada ese trabajador
+        # En caso contrario, no se sabe
+        flanjaInicial = iniciosJornadas[indexTrabajador]
+        if (flanjaInicial != -1):
+            # Cada trabajador tiene que trabajar 1 hora continua despues de su jornada inicio y antes de su jornada final (Es decir, trabajar 1 hora continua en los extremos)
+            problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaInicial:flanjaInicial+4]) == 4
+            problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaInicial+34:flanjaInicial+38]) == 4
+
+
+# (Temporal) No pueden haber dos pausas activas juntas 
+def agregarRestriccionNoPausasActivasJuntas(trabajadores, franjas, x, iniciosAlmuerzos, iniciosJornadas):
+    global problem
+
+    for indexTrabajador in range(len(trabajadores)):
+        # Diferente a -1 es porque se sabe cuando inicia la jornada ese trabajador
+        # En caso contrario, no se sabe
+        flanjaInicialJornada = iniciosJornadas[indexTrabajador]
+        flanjaInicialAlmuerzo = iniciosAlmuerzos[indexTrabajador]
+
+        if (flanjaInicialJornada != -1 and flanjaInicialAlmuerzo != -1):
+            # No pueden haber 2 pausas activas juntas
+            ## Antes de almorzar
+            for flanjaEspecifica in range(flanjaInicialJornada,flanjaInicialAlmuerzo):
+                flanjaConsecutiva = flanjaEspecifica+1
+
+                problem += pulp.lpSum(x[(trabajadores[indexTrabajador], flanjaEspecifica)] + x[(trabajadores[indexTrabajador], flanjaConsecutiva)]) >= 1
+            
+            ## Despues de almorzar
+            for flanjaEspecifica in range(flanjaInicialAlmuerzo+6,flanjaInicialJornada+37):
+                flanjaConsecutiva = flanjaEspecifica+1
+
+                problem += pulp.lpSum(x[(trabajadores[indexTrabajador], flanjaEspecifica)] + x[(trabajadores[indexTrabajador], flanjaConsecutiva)]) >= 1
 
 
 def crearExcelConResultadosOptimos(trabajadores, franjas, x):
@@ -108,13 +182,13 @@ def crearExcelConResultadosOptimos(trabajadores, franjas, x):
     print("Asignación Óptima de Horarios realizada")
 
 
-def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos):
+def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas):
     global problem
     global franjasTotales
     global final
 
     # Crea un problema (Modelo) de minimización lineal
-    problem = pulp.LpProblem("OptimizacionIniciosAlmuerzo", pulp.LpMinimize)
+    problem = pulp.LpProblem("OptimizacionJornadas", pulp.LpMinimize)
 
     # Define las variables de decisión
     x = definirVariablesDecision(trabajadores, franjas)
@@ -130,7 +204,7 @@ def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerz
 
     # Agrega las restricciones de las variables de decisión
 
-    #El código de optimización se puede reutilizar para tramos de franjas, entonces solo aplicar esta restricción cuando se renga todas las franjas
+    #El código de optimización se puede reutilizar para tramos de franjas, entonces solo aplicar esta restricción cuando se tenga todas las franjas
     if (len(franjas) == franjasTotales):
         ## Cada trabajador tiene que trabajar 8 horas al dia
         ## (Sin son franjas de 15 min entonces 8 horas son 32 franjas al dia)
@@ -145,6 +219,21 @@ def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerz
     ## El bloque del almuerzo corresponde entre las franjas 16 y 29 (Inclusives)
     ## Cada trabajador debe iniciar a almorzar entre la flanja 16 y 24 (Inclusives)
     agregarRestriccionAlmuerzoContinuoModelo(trabajadores, franjas, x, iniciosAlmuerzos)
+
+    ## Cada trabajador tiene que trabajar 1 hora continua antes y despues del almuerzo
+    agregarRestriccionTrabajaContinuoAntesDespuesAlmuerzoModelo(trabajadores, franjas, x, iniciosAlmuerzos)
+
+    ## Cada trabajador no puede trabajar antes de su jornada inicio
+    agregarRestriccionNoTrabajaAntesInicioJornadaModelo(trabajadores, franjas, x, iniciosJornadas)
+
+    ## Cada trabajador no puede trabajar despues de su jornada final
+    agregarRestriccionNoTrabajaDespuesFinalJornadaModelo(trabajadores, franjas, x, iniciosJornadas)
+
+    ## Cada trabajador tiene que trabajar 1 hora continua despues de su jornada inicio y antes de su jornada final (Es decir, trabajar 1 hora continua en los extremos)
+    agregarRestriccionTrabajaContinuoExtremosJornadaModelo(trabajadores, franjas, x, iniciosJornadas)
+
+    ## (Temporal) No pueden haber dos pausas activas juntas 
+    agregarRestriccionNoPausasActivasJuntas(trabajadores, franjas, x, iniciosAlmuerzos, iniciosJornadas)
 
     # Resuelve el problema
     problem.solve()
@@ -161,15 +250,16 @@ def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerz
         crearExcelConResultadosOptimos(trabajadores, franjas, x)
 
 
-def encontrarIniciosAlmuerzoOptimos(trabajadores, franjas, demanda_clientes):
-    # El objetivo es encontrar los inicios de almuerzos:
-    # El bloque del almuerzo corresponde entre las franjas 16 y 29 (Inclusives)
+def encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, numMin, numMax, iniciosAlmuerzos = [-1,-1,-1,-1,-1,-1,-1,-1], iniciosJornadas = [-1,-1,-1,-1,-1,-1,-1,-1]):
+    # El objetivo es encontrar los inicios de almuerzos y jornadas:
+    # Si no se ingresa inicios de almuerzo e inicios Jornadas, es porque por defecto es [-1,-1,-1,-1,-1,-1,-1,-1] para representar que aun no se han encontrado.
 
     global problem
 
-    # -1 corresponde a que aun no se sabe cual es la flanja inicial de almuerzo de cada cliente
-    iniciosAlmuerzos = [-1,-1,-1,-1,-1,-1,-1,-1]
-
+    if (sum(iniciosAlmuerzos) < 0):
+        buscar = "almuerzos"
+    else:
+        buscar = "jornadas"
 
     # Encuentra la flanja inicial de cada trabajador
     for indexTrabajador in range(len(trabajadores)):
@@ -177,10 +267,14 @@ def encontrarIniciosAlmuerzoOptimos(trabajadores, franjas, demanda_clientes):
         franjasOptimas = []
 
         # cada trabajador debe iniciar a almorzar entre la flanja 16 y 24 (Inclusives)
-        for flanjaInicial in range(16,25):
+        # cada trabajador debe iniciar su jornada entre la flanja 0 y 8 (Inclusives)
+        for flanjaInicial in range(numMin,numMax+1):
+            if (buscar == "almuerzos"):
+                iniciosAlmuerzos[indexTrabajador] = flanjaInicial
+            else:
+                iniciosJornadas[indexTrabajador] = flanjaInicial
 
-            iniciosAlmuerzos[indexTrabajador] = flanjaInicial
-            optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos)
+            optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas)
 
             if (pulp.LpStatus[problem.status] == "Optimal"):
                 valoresOptimos += [pulp.value(problem.objective)]
@@ -190,10 +284,16 @@ def encontrarIniciosAlmuerzoOptimos(trabajadores, franjas, demanda_clientes):
         indiceMaxOptimo = valoresOptimos.index(maxValorOptimo) #Primera Ocurrencia
         flanjaOptimaTrabajador = franjasOptimas[indiceMaxOptimo]
 
-        iniciosAlmuerzos[indexTrabajador] = flanjaOptimaTrabajador
+        if (buscar == 'almuerzos'):
+            iniciosAlmuerzos[indexTrabajador] = flanjaOptimaTrabajador
+        else:
+            iniciosJornadas[indexTrabajador] = flanjaOptimaTrabajador
 
+    if (buscar == 'almuerzos'):
+        return iniciosAlmuerzos
+    else:
+        return iniciosJornadas
 
-    return iniciosAlmuerzos
 
 
 #Inicio del Main
@@ -217,54 +317,17 @@ franjasTotales = len(franjas)
 # Encuentra las franjas iniciales del almuerzo de cada trabajador
 final = False
 problem = pulp.LpProblem("OptimizacionIniciosAlmuerzo", pulp.LpMinimize)
-iniciosAlmuerzos = encontrarIniciosAlmuerzoOptimos(trabajadores, franjas, demanda_clientes)
+## cada trabajador debe iniciar a almorzar entre la flanja 16 y 24 (Inclusives)
+iniciosAlmuerzos = encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, 16, 24)
+
+# Encuentra las franjas iniciales de la jornada de cada trabajador
+problem = pulp.LpProblem("OptimizacionInicioJornadas", pulp.LpMinimize)
+# cada trabajador debe iniciar su jornada entre la flanja 0 y 8 (Inclusives)
+iniciosJornadas = encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, 0, 8, iniciosAlmuerzos)
 
 ## Modelo final
 final = True
-optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos)
-
-"""
-# Crea un problema (Modelo) de minimización lineal
-problem = pulp.LpProblem("OptimizacionJornadasLaborales", pulp.LpMinimize)
-
-# Define las variables de decisión
-x = definirVariablesDecision(trabajadores, franjas)
-
-# Define un diccionario para almacenar las diferencias de cada franja
-diferencias = definirDiccionariosDiferencia(franjas)
-
-# Agrega las restricciones de las diferencias
-agregarRestriccionesDiferenciaModelo(trabajadores, franjas, demanda_clientes, diferencias, x)
-
-# Agrega la función objetivo para minimizar las diferencias
-agregarFuncionObjetivoModelo(diferencias,franjas)
-
-# Agrega las restricciones de las variables de decisión
-
-## Cada trabajador tiene que trabajar 8 horas al dia
-## (Sin son franjas de 15 min entonces 8 horas son 32 franjas al dia)
-## Pero hay que tener en cuenta que hay pausas activas. En general un trabajador puede sacar entre 2-6 pausas activas dependiendo de como las saca.
-## Entonces solo tiene que trabajar minimo 26 franjas y maximo 30 franjas 
-agregarRestriccionfranjasTrabajadasModelo(trabajadores, franjas, x, 26, 30)
-
-## Cada franja debe ser atendida por al menos un trabajador
-agregarRestriccionFranjaAtendidaTrabajadorModelo(trabajadores, franjas, x)
-
-## Cada trabajador debe sacar 1.5h de almuerzo al dia
-agregarRestriccionAlmuerzoModelo(trabajadores, franjas, x)
-
-# Resuelve el problema
-problem.solve()
-
-# Imprime el estado del problema (óptimo, subóptimo, etc.)
-print("Estado:", pulp.LpStatus[problem.status])
-
-# Imprime el valor optimo de la diferencia
-print("Valor optimo de la Diferencia:", pulp.value(problem.objective))
-
-# Guarda la asignación óptima de horarios en un excel
-fecha_hora = list(demanda_df.fecha_hora)
-crearExcelConResultadosOptimos(trabajadores, franjas, x, fecha_hora)
-"""
+optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas)
 
 print(iniciosAlmuerzos)
+print(iniciosJornadas)
