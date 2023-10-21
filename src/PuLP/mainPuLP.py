@@ -3,19 +3,21 @@ def definirVariablesDecision(trabajadores, franjas):
     return x
 
 
+# Diferencia con absoluto (Provoca que el modelo se enloquezca obligando que todas las diferencias sean si o si posirivas)
+"""
+# Diferencia con absoluto
 def definirDiccionariosDiferencia(franjas):
     diferencias = pulp.LpVariable.dicts('diferencia', franjas, 0, None)
     return diferencias
 
 
+# Diferencia con absoluto
 def agregarRestriccionesDiferenciaModelo(trabajadores, franjas, demanda_clientes, diferencias, x):
     ## Permite que el valor de la variable diferencias sea el valor absoluto de la diferencia entre la demanda y la asignación en cada hora.
 
-    """
-    La razón detrás de agregar tanto la resta positiva como negativa de las diferencias se relaciona con la forma en que se modela el problema de optimización. En este contexto, estás tratando de medir la diferencia entre la demanda de clientes y la asignación de trabajadores en cada hora, y esta diferencia puede ser tanto positiva como negativa.
+    # La razón detrás de agregar tanto la resta positiva como negativa de las diferencias se relaciona con la forma en que se modela el problema de optimización. En este contexto, estás tratando de medir la diferencia entre la demanda de clientes y la asignación de trabajadores en cada hora, y esta diferencia puede ser tanto positiva como negativa.
 
-    Agregar ambas restricciones (una para la diferencia positiva y otra para la diferencia negativa) es necesario para modelar de manera efectiva este problema de optimización. Permite que el valor de la variable diferencias sea el valor absoluto de la diferencia entre la demanda y la asignación en cada hora.
-    """
+    # Agregar ambas restricciones (una para la diferencia positiva y otra para la diferencia negativa) es necesario para modelar de manera efectiva este problema de optimización. Permite que el valor de la variable diferencias sea el valor absoluto de la diferencia entre la demanda y la asignación en cada hora.
 
     global problem
     global franjasTotales
@@ -26,7 +28,44 @@ def agregarRestriccionesDiferenciaModelo(trabajadores, franjas, demanda_clientes
             t = t-16
         problem += diferencias[t] >= pulp.lpSum(x[(i, t)] for i in trabajadores) - demanda_clientes[t]
         problem += diferencias[t] >= demanda_clientes[t] - pulp.lpSum(x[(i, t)] for i in trabajadores)
-        
+"""
+
+
+# Diferencia sin absoluto (Provoca que el modelo se enloquezca debido a que trata de beneficiar la sobre capacidad)
+# Diferencia sin absoluto
+def definirDiccionariosDiferencia(franjas):
+    diferencias = pulp.LpVariable.dicts('diferencia', franjas)
+    return diferencias
+
+
+# Diferencia sin absoluto
+def agregarRestriccionesDiferenciaModelo(trabajadores, franjas, demanda_clientes, diferencias, x):
+    global problem
+    global franjasTotales
+
+    
+    for t in franjas:
+        if (len(franjas) != franjasTotales):
+            t = t-16
+        problem += diferencias[t] == demanda_clientes[t] - pulp.lpSum(x[(i, t)] for i in trabajadores)
+
+
+# Diferencia al cuadrado (No se permite debido a que es programación lineal y no cuadratica. Es decir, PuLP no deja elevar al cuadrado)
+#(No se usa) Solo es para referencia
+def definirDiccionariosDiferenciaAlCuadrado(franjas):
+    diferenciasCuadrado = pulp.LpVariable.dicts('diferenciaCuadrado', franjas, 0, None)
+    return diferenciasCuadrado
+
+
+#(No se usa) Solo es para referencia
+def agregarRestriccionDiferenciaAlCuadradoModelo(diferencias, diferenciasCuadrado):
+    #Se supone que aquí deberiamos hacer el cuadrado de la diferencia
+    global problem
+    global franjasTotales
+
+    for t in franjas:
+        problem += diferenciasCuadrado[t] == diferencias[t]*diferencias[t] # No se puede usar expresiones cuadraticas en programación lineal
+
 
 
 def agregarFuncionObjetivoModelo(diferencias,franjas):
