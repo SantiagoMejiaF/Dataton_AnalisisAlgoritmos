@@ -7,3 +7,5 @@ class Parametros:
     DURACIONJORNADATRABAJADOR = 38
     DURACIONJORNADASUCURSAL = 46
     CANTIDADEMPLEADOS = 8
+    SRC_DEMANDA = './src/Dataton2023_Etapa1.xlsx'
+    ESTADOS = {'Nada': 0, 'Trabaja': 1, 'Pausa': 2, 'Almuerzo': 3}
