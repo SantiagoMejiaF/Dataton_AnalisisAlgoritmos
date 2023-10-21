@@ -70,7 +70,7 @@ def agregarRestriccionDiferenciaAlCuadradoModelo(diferencias, diferenciasCuadrad
 
 def agregarFuncionObjetivoModelo(diferencias,franjas):
     global problem
-    problem += pulp.lpSum(diferencias[t] for t in franjas)
+    problem += pulp.lpSum(diferencias[t]+20 for t in franjas)
 
 
 def agregarRestriccionfranjasTrabajadasModelo(trabajadores, franjas, x, numMinimo, numMaximo):
@@ -272,7 +272,7 @@ def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerz
     agregarRestriccionTrabajaContinuoExtremosJornadaModelo(trabajadores, franjas, x, iniciosJornadas)
 
     ## (Temporal) No pueden haber dos pausas activas juntas 
-    agregarRestriccionNoPausasActivasJuntas(trabajadores, franjas, x, iniciosAlmuerzos, iniciosJornadas)
+    #agregarRestriccionNoPausasActivasJuntas(trabajadores, franjas, x, iniciosAlmuerzos, iniciosJornadas)
 
     # Resuelve el problema
     problem.solve()
@@ -353,16 +353,20 @@ trabajadores = list(trabajadores_df.documento)
 franjas = list(range(0, len(demanda_clientes)))  # De 0 (7:30am) hasta la ultima demanda registrada (de 0-45)
 franjasTotales = len(franjas)
 
-# Encuentra las franjas iniciales del almuerzo de cada trabajador
-final = False
-problem = pulp.LpProblem("OptimizacionIniciosAlmuerzo", pulp.LpMinimize)
-## cada trabajador debe iniciar a almorzar entre la flanja 16 y 24 (Inclusives)
-iniciosAlmuerzos = encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, 16, 24)
 
-# Encuentra las franjas iniciales de la jornada de cada trabajador
-problem = pulp.LpProblem("OptimizacionInicioJornadas", pulp.LpMinimize)
-# cada trabajador debe iniciar su jornada entre la flanja 0 y 8 (Inclusives)
-iniciosJornadas = encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, 0, 8, iniciosAlmuerzos)
+final = False
+iniciosAlmuerzos = [-1,-1,-1,-1,-1,-1,-1,-1]
+iniciosJornadas = [-1,-1,-1,-1,-1,-1,-1,-1]
+for i in range(100):
+    # Encuentra las franjas iniciales del almuerzo de cada trabajador
+    problem = pulp.LpProblem("OptimizacionIniciosAlmuerzo", pulp.LpMinimize)
+    ## cada trabajador debe iniciar a almorzar entre la flanja 16 y 24 (Inclusives)
+    iniciosAlmuerzos = encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, 16, 24, iniciosAlmuerzos, iniciosJornadas)
+
+    # Encuentra las franjas iniciales de la jornada de cada trabajador
+    problem = pulp.LpProblem("OptimizacionInicioJornadas", pulp.LpMinimize)
+    # cada trabajador debe iniciar su jornada entre la flanja 0 y 8 (Inclusives)
+    iniciosJornadas = encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, 0, 8, iniciosAlmuerzos,iniciosJornadas)
 
 ## Modelo final
 final = True
