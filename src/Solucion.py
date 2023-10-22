@@ -66,10 +66,20 @@ def mostrarSolucion(df_solucion: pd.DataFrame):
     plt.xticks(rotation=45)  # Rota las etiquetas del eje x para mayor legibilidad
     plt.show()
 
+def generarHorario(df_solucion: pd.DataFrame):
+    # Usar pivot_table para organizar los datos y llenar los valores faltantes con ""
+    pivot_df = df_solucion.pivot_table(index='hora_franja', columns='documento', values='estado', aggfunc='first', fill_value='')
+
+    # Imprimir el DataFrame resultante
+    pivot_df.to_excel('.\src\PuLP\horario.xlsx')
+    print(pivot_df)
+
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import Solucion
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# df_solucion = pd.read_excel('.\src\PuLP\solucionOptima.xlsx')
+# Solucion.mostrarSolucion(df_solucion)
+
 df_solucion = pd.read_csv('.\src\PuLP\solucionOptima.csv')
-Solucion.mostrarSolucion(df_solucion)
+Solucion.generarHorario(df_solucion)
