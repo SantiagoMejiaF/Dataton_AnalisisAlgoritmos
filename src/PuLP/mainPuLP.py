@@ -288,10 +288,10 @@ problem = pulp.LpProblem("OptimizacionIniciosAlmuerzo", pulp.LpMinimize)
 
 # Encontrar inicios optimos de almuerzo y jornadas
 final = False
-iniciosAlmuerzos = [16,17,18,19,20,21,22,24]
-iniciosJornadas = [0,1,2,3,4,5,6,8]
+iniciosAlmuerzos = [16, 17, 18, 19, 20, 21, 22, 16]
+iniciosJornadas = [0, 0, 1, 2, 3, 4, 5, 8]
 
-for i in range(1):
+for i in range(0):
     # Encuentra las franjas iniciales del almuerzo de cada trabajador
     ## cada trabajador debe iniciar a almorzar entre la flanja 16 y 24 (Inclusives)
     iniciosAlmuerzos = encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, 16, 24, iniciosAlmuerzos, iniciosJornadas, "buscarAlmuerzos")
