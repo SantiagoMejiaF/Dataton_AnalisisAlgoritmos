@@ -376,7 +376,7 @@ franjasTotales = len(franjas)
 final = False
 iniciosAlmuerzos = [16,17,18,19,20,21,22,24]
 iniciosJornadas = [0,1,2,3,4,5,6,8]
-for i in range(2):
+for i in range(1):
     # Encuentra las franjas iniciales del almuerzo de cada trabajador
     problem = pulp.LpProblem("OptimizacionIniciosAlmuerzo", pulp.LpMinimize)
     ## cada trabajador debe iniciar a almorzar entre la flanja 16 y 24 (Inclusives)
