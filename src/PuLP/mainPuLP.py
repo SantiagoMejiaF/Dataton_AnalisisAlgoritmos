@@ -3,43 +3,15 @@ def definirVariablesDecision(trabajadores, franjas):
     return x
 
 
-# Diferencia con absoluto (Provoca que el modelo se enloquezca obligando que todas las diferencias sean si o si posirivas)
-"""
-# Diferencia con absoluto
-def definirDiccionariosDiferencia(franjas):
-    diferencias = pulp.LpVariable.dicts('diferencia', franjas, 0, None)
-    return diferencias
+# Variable intermedia para almacenar las diferencias
+# Función objetivo absoluto (Con condicionales)
 
-
-# Diferencia con absoluto
-def agregarRestriccionesDiferenciaModelo(trabajadores, franjas, demanda_clientes, diferencias, x):
-    ## Permite que el valor de la variable diferencias sea el valor absoluto de la diferencia entre la demanda y la asignación en cada hora.
-
-    # La razón detrás de agregar tanto la resta positiva como negativa de las diferencias se relaciona con la forma en que se modela el problema de optimización. En este contexto, estás tratando de medir la diferencia entre la demanda de clientes y la asignación de trabajadores en cada hora, y esta diferencia puede ser tanto positiva como negativa.
-
-    # Agregar ambas restricciones (una para la diferencia positiva y otra para la diferencia negativa) es necesario para modelar de manera efectiva este problema de optimización. Permite que el valor de la variable diferencias sea el valor absoluto de la diferencia entre la demanda y la asignación en cada hora.
-
-    global problem
-    global franjasTotales
-
-    
-    for t in franjas:
-        if (len(franjas) != franjasTotales):
-            t = t-16
-        problem += diferencias[t] >= pulp.lpSum(x[(i, t)] for i in trabajadores) - demanda_clientes[t]
-        problem += diferencias[t] >= demanda_clientes[t] - pulp.lpSum(x[(i, t)] for i in trabajadores)
-
-"""
-
-# Diferencia sin absoluto
-"""
-# Diferencia sin absoluto
 def definirDiccionariosDiferencia(franjas):
     diferencias = pulp.LpVariable.dicts('diferencia', franjas)
     return diferencias
 
 
-# Diferencia sin absoluto
+
 def agregarRestriccionesDiferenciaModelo(trabajadores, franjas, demanda_clientes, diferencias, x):
     global problem
     global franjasTotales
@@ -50,44 +22,22 @@ def agregarRestriccionesDiferenciaModelo(trabajadores, franjas, demanda_clientes
             t = t-16
         problem += diferencias[t] == demanda_clientes[t] - pulp.lpSum(x[(i, t)] for i in trabajadores)
 
-"""
 
 
-# Diferencia al cuadrado (No se permite debido a que es programación lineal y no cuadratica. Es decir, PuLP no deja elevar al cuadrado)
-
-"""
-#(No se usa) Solo es para referencia
-def definirDiccionariosDiferenciaAlCuadrado(franjas):
-    diferenciasCuadrado = pulp.LpVariable.dicts('diferenciaCuadrado', franjas, 0, None)
-    return diferenciasCuadrado
-
-
-#(No se usa) Solo es para referencia
-def agregarRestriccionDiferenciaAlCuadradoModelo(diferencias, diferenciasCuadrado):
-    #Se supone que aquí deberiamos hacer el cuadrado de la diferencia
-    global problem
-    global franjasTotales
-
-    for t in franjas:
-        problem += diferenciasCuadrado[t] == diferencias[t]*diferencias[t] # No se puede usar expresiones cuadraticas en programación lineal
-
-
-"""
-
-# Función objetivo absoluto en caso de que se use una variable intermedia para almacenar las diferencias (con condicionales)
-"""
 def agregarFuncionObjetivoModelo(diferencias,franjas):
     global problem
     problem += pulp.lpSum(diferencias[t] if (diferencias[t]>=0) else -diferencias[t] for t in franjas ), "Sumatoria de diferencias absolutas"
+
+
+
+# No se usan variables intermedias
+# Función objetivo absoluto (Con condicionales)
 """
-
-
-# Función objetivo absoluto directa en caso de que no use variables intermedias (con condicionales)
 def agregarFuncionObjetivoModelo(franjas, demanda_clientes, x):
     global problem
     problem += pulp.lpSum((demanda_clientes[t] - pulp.lpSum(x[(i, t)])) if ((demanda_clientes[t] - pulp.lpSum(x[(i, t)])) >= 0) else (-1*(demanda_clientes[t] - pulp.lpSum(x[(i, t)]))) for t in franjas for i in trabajadores), "Sumatoria de las diferencias absolutas entre la demanda y la cantidad de trabajadores"
 
-    
+    """
 
 def agregarRestriccionfranjasTrabajadasModelo(trabajadores, franjas, x, numMinimo, numMaximo):
     global problem
@@ -190,9 +140,9 @@ def agregarRestriccionPausasActivasModelo(trabajadores, franjas, x, iniciosAlmue
         flanjaInicialAlmuerzo = iniciosAlmuerzos[indexTrabajador]
 
         if (flanjaInicialJornada != -1 and flanjaInicialAlmuerzo != -1):
-            # En cada grupo de 5 solo puede haber 1 pausa activa
+            
             ## Antes de almorzar
-            for flanjaEspecifica in range(flanjaInicialJornada+4,flanjaInicialAlmuerzo-4):
+            for flanjaEspecifica in range(flanjaInicialJornada,flanjaInicialAlmuerzo-4):
                 
                 # Intervalos de 5 deben sumar 4 o 5 flanjas trabajadas
                 problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaEspecifica:flanjaEspecifica+5]) >= 4
@@ -201,7 +151,7 @@ def agregarRestriccionPausasActivasModelo(trabajadores, franjas, x, iniciosAlmue
                 problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaEspecifica:flanjaEspecifica+9]) <= 8
             
             ## Despues de almorzar
-            for flanjaEspecifica in range(flanjaInicialAlmuerzo+10,flanjaInicialJornada+34):
+            for flanjaEspecifica in range(flanjaInicialAlmuerzo+6,flanjaInicialJornada+34):
 
                 # Intervalos de 5 deben sumar 4 o 5 flanjas trabajadas
                 problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaEspecifica:flanjaEspecifica+5]) >= 4
@@ -211,7 +161,7 @@ def agregarRestriccionPausasActivasModelo(trabajadores, franjas, x, iniciosAlmue
                     problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaEspecifica:flanjaEspecifica+9]) <= 8
 
 
-def crearExcelConResultadosOptimos(trabajadores, franjas, x):
+def crearExcelConResultadosOptimos(trabajadores, franjas, x, iniciosAlmuerzos):
     global fecha_hora
 
     horas = [str(i).split()[1] for i in fecha_hora]
@@ -243,6 +193,45 @@ def crearExcelConResultadosOptimos(trabajadores, franjas, x):
 
     solucionOptima.to_excel("./src/PuLP/solucionOptima.xlsx", index=False)
 
+    ## Proximamente se borrará el código anterior
+    ## Archivo CSV
+    horas = [str(i).split()[1] for i in fecha_hora]
+
+    documentoOptimo = []
+    estadoOptimo = []
+    horaOptimo = []
+    franjaOptimo = []
+
+    for t in franjas:
+        for i in trabajadores:
+            documentoOptimo += [i]
+            
+            if pulp.value(x[(i, t)]) == 1:
+                estadoOptimo += ["Trabaja"]
+            else:
+                if (t != 0 and t != 45):
+                    if(t in range(iniciosAlmuerzos[i-1],iniciosAlmuerzos[i-1]+6)):
+                        estadoOptimo += ["Almuerza"]
+                    elif (pulp.value(x[(i, t-1)]) == 1 and pulp.value(x[(i, t+1)]) == 1):
+                        estadoOptimo += ["Pausa Activa"]
+                    else:
+                        estadoOptimo += ["Nada"]
+                else:
+                    estadoOptimo += ["Nada"]
+            
+            horaOptimo += [horas[t]]
+            franjaOptimo += [t+30]
+                
+    suc_codeOptimo = [60]*(len(franjas)*len(trabajadores))
+    fechaOptimo = [str(fecha_hora[0]).split()[0]]*(len(franjas)*len(trabajadores))
+
+
+    data = {'suc_cod': suc_codeOptimo, 'documento': documentoOptimo, 'fecha': fechaOptimo, 'hora': horaOptimo, 'estado': estadoOptimo, 'hora_franja': franjaOptimo}
+    solucionOptima = pd.DataFrame(data)
+    solucionOptima = solucionOptima.sort_values(by=['documento','hora_franja'])
+
+    solucionOptima.to_csv("./src/PuLP/solucionOptima.csv", index=False) 
+
     print("Asignación Óptima de Horarios realizada")
 
 
@@ -257,8 +246,8 @@ def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerz
     # Define las variables de decisión
     x = definirVariablesDecision(trabajadores, franjas)
 
-    ### Con variables intermedias (Diferencia)
-    """
+    ### Con variable intermedia (Diferencias)
+    
     # Define un diccionario para almacenar las diferencias de cada franja
     diferencias = definirDiccionariosDiferencia(franjas)
 
@@ -268,11 +257,13 @@ def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerz
     # Agrega la función objetivo para minimizar las diferencias
     agregarFuncionObjetivoModelo(diferencias,franjas)
 
-    """
+    
 
     ### Sin variables intermedias
+    """
     # Agrega la función objetivo para minimizar las diferencias 
     agregarFuncionObjetivoModelo(franjas, demanda_clientes, x)
+    """
 
     # Agrega las restricciones de las variables de decisión
 
@@ -319,7 +310,7 @@ def optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerz
     # Guarda la asignación óptima de horarios en un excel
     ## Solo si es el modelo final
     if (final):
-        crearExcelConResultadosOptimos(trabajadores, franjas, x)
+        crearExcelConResultadosOptimos(trabajadores, franjas, x, iniciosAlmuerzos)
 
 
 def encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, numMin, numMax, iniciosAlmuerzos, iniciosJornadas, buscar):
@@ -381,7 +372,7 @@ trabajadores = list(trabajadores_df.documento)
 franjas = list(range(0, len(demanda_clientes)))  # De 0 (7:30am) hasta la ultima demanda registrada (de 0-45)
 franjasTotales = len(franjas)
 
-
+# Encontrar inicios optimos de almuerzo y jornadas
 final = False
 iniciosAlmuerzos = [16,17,18,19,20,21,22,24]
 iniciosJornadas = [0,1,2,3,4,5,6,8]
@@ -398,6 +389,7 @@ for i in range(2):
 
 ## Modelo final
 final = True
+problem = pulp.LpProblem("OptimizacionJornadasFinal", pulp.LpMinimize)
 optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas)
 
 print(iniciosAlmuerzos)
