@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 RUTA_DEMANDA = '.\src\PuLP\Dataton2023_Etapa1.xlsx'
     
@@ -31,10 +32,10 @@ def mostrarSolucion(df_solucion: pd.DataFrame):
     plt.figure(figsize=(10, 6))  # Ajusta el tamaño del gráfico según tus preferencias
 
     # Graficar la columna 'demanda' en el eje y
-    plt.plot(df_solucion['hora_franja'], df_solucion['demanda'], label='Demanda', marker='o')
+    plt.bar(df_solucion['hora_franja'], df_solucion['demanda'], label='Demanda', color='gray')
 
     # Graficar la columna 'trabajadores' en el mismo gráfico
-    plt.plot(df_solucion['hora_franja'], df_solucion['trabajadores'], label='Trabajadores', marker='s')
+    plt.plot(df_solucion['hora_franja'], df_solucion['trabajadores'], label='Demanda', color='blue')
 
     # Rotar las etiquetas del eje x para mayor legibilidad
     plt.xticks(rotation=45)
@@ -42,11 +43,33 @@ def mostrarSolucion(df_solucion: pd.DataFrame):
     # Agregar etiquetas y título al gráfico
     plt.xlabel('Franja Horaria')
     plt.ylabel('Cantidad')
-    plt.title('Gráfico de Demanda y Trabajadores por Franja Horaria')
+    plt.title('Capacidad vs. Demanda')
 
     # Agregar una leyenda
     plt.legend()
 
     # Mostrar el gráfico
     plt.grid(True)
+    # plt.show()
+
+    plt.figure(figsize=(10, 6))  # Ajusta el tamaño del gráfico
+    colores = np.where(df_solucion['resultado'] >= 0, 'orange', 'green')
+    # Crea el gráfico de barras con los colores personalizados
+    plt.bar(df_solucion['hora_franja'], df_solucion['resultado'], color=colores)
+
+    # Agrega una línea horizontal negra en el valor cero
+    plt.axhline(0, color='black', linestyle='--', linewidth=1)
+
+    plt.xlabel('Franja Hora')
+    plt.ylabel('Resultado')
+    plt.title('Demanda - Capacidad')
+    plt.xticks(rotation=45)  # Rota las etiquetas del eje x para mayor legibilidad
     plt.show()
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import Solucion
+df_solucion = pd.read_excel('.\src\PuLP\solucionOptima.xlsx')
+Solucion.mostrarSolucion(df_solucion)
