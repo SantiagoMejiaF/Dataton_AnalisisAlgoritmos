@@ -338,8 +338,8 @@ def encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, numMin, num
                 valoresOptimos += [pulp.value(problem.objective)]
                 franjasOptimas += [flanjaInicial]
         if (len(valoresOptimos) > 0):
-            maxValorOptimo = max(valoresOptimos)
-            indiceMaxOptimo = valoresOptimos.index(maxValorOptimo) #Primera Ocurrencia
+            minValorOptimo = min(valoresOptimos)
+            indiceMaxOptimo = valoresOptimos.index(minValorOptimo) #Primera Ocurrencia
             flanjaOptimaTrabajador = franjasOptimas[indiceMaxOptimo]
 
         if (buscar == 'buscarAlmuerzos'):
