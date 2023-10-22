@@ -272,6 +272,9 @@ def encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, numMin, num
 
 import pulp
 import pandas as pd
+import sys
+import os
+import Solucion
 
 # Extración de datos del excel
 dataton2023 = './src/PuLP/Dataton2023_Etapa1.xlsx'
@@ -307,10 +310,8 @@ optimizacionJornadas(trabajadores, franjas, demanda_clientes, iniciosAlmuerzos, 
 print(iniciosAlmuerzos)
 print(iniciosJornadas)
 
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import Solucion
-df_solucion = pd.read_excel('.\src\PuLP\solucionOptima.csv')
+# Imprimir las gráficas correspondiente a la solución generada
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+df_solucion = pd.read_csv('.\src\PuLP\solucionOptima.csv')
 Solucion.mostrarSolucion(df_solucion)

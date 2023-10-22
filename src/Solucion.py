@@ -71,5 +71,5 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import Solucion
-df_solucion = pd.read_excel('.\src\PuLP\solucionOptima.xlsx')
+df_solucion = pd.read_csv('.\src\PuLP\solucionOptima.csv')
 Solucion.mostrarSolucion(df_solucion)
