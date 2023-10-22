@@ -112,7 +112,7 @@ def agregarRestriccionPausasActivasModelo(trabajadores, franjas, x, iniciosAlmue
             problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaEspecifica:flanjaEspecifica+5]) >= 4
 
             # Intervalos de 9 no pueden sumar 9 flanjas trabajadas
-            if (flanjaEspecifica < len(franjas)-9):
+            if (flanjaEspecifica <= len(franjas)-9):
                 problem += pulp.lpSum(x[(trabajadores[indexTrabajador], t)] for t in franjas[flanjaEspecifica:flanjaEspecifica+9]) <= 8
 
 
@@ -272,9 +272,6 @@ def encontrarIniciosOptimos(trabajadores, franjas, demanda_clientes, numMin, num
 
 import pulp
 import pandas as pd
-import sys
-import os
-import Solucion
 
 # Extración de datos del excel
 dataton2023 = './src/PuLP/Dataton2023_Etapa1.xlsx'
@@ -312,6 +309,11 @@ print(iniciosJornadas)
 
 
 # Imprimir las gráficas correspondiente a la solución generada
+import sys
+import os
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import Solucion
 df_solucion = pd.read_csv('.\src\PuLP\solucionOptima.csv')
 Solucion.mostrarSolucion(df_solucion)
