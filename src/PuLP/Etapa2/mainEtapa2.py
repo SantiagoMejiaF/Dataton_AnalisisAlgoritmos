@@ -31,7 +31,7 @@ demanda_df = pd.read_excel(dataton2023, sheet_name='demand')
 trabajadores_df = pd.read_excel(dataton2023, sheet_name='workers')
 
 # Realizar el mismo proceso por cada sucursal (5 sucursales)
-for suc_cod in demanda_df.suc_code.unique():
+for suc_cod in demanda_df.suc_cod.unique():
 
     # DataFrames por sucursal
     demanda_df_sucursal = demanda_df[(demanda_df["suc_cod"] == suc_cod)]
@@ -50,7 +50,8 @@ for suc_cod in demanda_df.suc_code.unique():
     iniciosJornadas = []
     iniciosAlmuerzos = []
 
-    for indexTrabajador in len(trabajadores):
+    for indexTrabajador in range(len(trabajadores)):
+
         if (tipo_contrato[indexTrabajador] == "TC"):
             iniciosJornadas += [franjaInicialJornadaTC]
             franjaInicialJornadaTC += 2
@@ -83,7 +84,7 @@ for suc_cod in demanda_df.suc_code.unique():
         
         # Franjas de cada dia
         franjas = list(range(0, len(demanda_clientes)))  # De 0 (7:30am) hasta la ultima demanda registrada
-
+ 
         # Modelo final por dia (Guardar progresivamente los resultados en un dataframe)
         optimizacionJornadas()
         guardarDatosOptimos()
