@@ -161,11 +161,9 @@ def agregarRestriccionPausasActivasModelo(trabajadores, tipoContrato, franjas, x
                     problem += pulp.lpSum(x[(i, t)] for t in franjas[franjaEspecifica:franjaEspecifica+9]) <= 8
 
 
-#
-
-
 def optimizacionJornadas(trabajadores, tipoContrato, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas):
     global problem
+    global x
 
     # Crea un problema (Modelo) de minimización lineal
     problem = pulp.LpProblem("OptimizacionJornadas", pulp.LpMinimize)
@@ -223,16 +221,94 @@ def optimizacionJornadas(trabajadores, tipoContrato, franjas, demanda_clientes, 
     print("Valor optimo de la Diferencia:", pulp.value(problem.objective))
 
 
+def crearSemillaIniciosJornadasAlmuerzos(trabajadores, tipoContrato):
+    global iniciosJornadas
+    global iniciosAlmuerzos
 
-def crearDataframesOptimos():
-    return None
+    franjaInicialJornadaTC = 0 # 7:30 am
+    franjaInicialJornadaMT = 36 # 4:30 pm
+    franjaInicialAlmuerzoTC = 16 # 11:30 am
 
-def guardarDatosOptimos():
-    return None
+    for indexTrabajador in range(len(trabajadores)):
+
+        if (tipoContrato[indexTrabajador] == "TC"):
+            iniciosJornadas += [franjaInicialJornadaTC]
+            franjaInicialJornadaTC += 2
+
+            iniciosAlmuerzos += [franjaInicialAlmuerzoTC]
+            franjaInicialAlmuerzoTC += 2
+        else:
+            iniciosJornadas += [franjaInicialJornadaMT]
+            franjaInicialJornadaTC -= 5
+
+            iniciosAlmuerzos += [-1] # Los MT no almuerzan
 
 
+def crearDataframeOptimoVacio():
+    global solucionOptima_df
+
+    # Definir la estructura del DataFrame
+    columnas = ["suc_cod", "documento", "fecha", "hora", "estado", "hora_franja"]
+
+    # Crear un DataFrame vacío
+    solucionOptima_df = pd.DataFrame(columns=columnas, dtype="object")
 
 
+def guardarResultadoOptimoDia(trabajadores, tipoContrato, franjas, iniciosAlmuerzos, fecha_hora, suc_cod, fecha_actual):
+    global solucionOptima_df
+    global x
+
+    # Vamos a rellenar toda la data optima de este dia para guardarlo en el dataframe acumulador 
+    horas = [fechaHora.time().strftime("%H:%M") for fechaHora in fecha_hora]
+
+    suc_codOptimo = [suc_cod]*(len(franjas)*len(trabajadores))
+    documentoOptimo = []
+    fechaOptimo = [fecha_actual.strftime("%d/%m/%Y")]*(len(franjas)*len(trabajadores))
+    horaOptimo = []
+    estadoOptimo = []
+    franjaOptimo = []
+
+    for t in franjas:
+        for indexTrabajador in range(len(trabajadores)):
+            i = trabajadores[indexTrabajador]
+            contrato = tipoContrato[indexTrabajador]
+            documentoOptimo += [i]
+            
+            if pulp.value(x[(i, t)]) == 1:
+                estadoOptimo += ["Trabaja"]
+            else:
+                if (t != 0 and t != len(franjas)-1):
+                    if(contrato == "TC" and t in range(iniciosAlmuerzos[indexTrabajador],iniciosAlmuerzos[indexTrabajador]+6)):
+                        estadoOptimo += ["Almuerza"]
+                    elif (pulp.value(x[(i, t-1)]) == 1 and pulp.value(x[(i, t+1)]) == 1):
+                        estadoOptimo += ["Pausa Activa"]
+                    else:
+                        estadoOptimo += ["Nada"]
+                else:
+                    estadoOptimo += ["Nada"]
+            
+            horaOptimo += [horas[t]]
+            franjaOptimo += [t+30]
+
+    # Crear el dataframe del dia en el que estamos
+    data = {'suc_cod': suc_codOptimo, 'documento': documentoOptimo, 'fecha': fechaOptimo, 'hora': horaOptimo, 'estado': estadoOptimo, 'hora_franja': franjaOptimo}
+
+    solucionOptimaDia_df = pd.DataFrame(data)
+    solucionOptimaDia_df = solucionOptimaDia_df.sort_values(by=['documento','hora_franja'])
+
+    # Concatenar los datos optimos de ese dia con los otros datos que hemos recolectado hasta ahora
+    solucionOptima_df = pd.concat([solucionOptima_df, solucionOptimaDia_df], ignore_index=True)
+
+
+def crearCSVResultadoOptimo():
+    global solucionOptima_df
+
+    ## Archivo CSV
+    solucionOptima_df.to_csv("./src/PuLP/Etapa2/solucionOptimaEtapa2.csv", index=False) 
+
+    print("Asignación Óptima de Horarios realizada")
+
+    
 
 
 #Inicio del Main
@@ -243,8 +319,9 @@ import pandas as pd
 # Inicializa la variable que tendrá el modelo de optimización
 problem = pulp.LpProblem("OptimizacionJornadasLaborales", pulp.LpMinimize)
 
-# Crea los dataFrame vacios donde irá la respuesta optima guardad
-crearDataframesOptimos()
+# Crea los dataFrame vacios donde irá la respuesta optima guardada
+solucionOptima_df = pd.DataFrame()
+crearDataframeOptimoVacio()
 
 # Extración de datos del excel
 dataton2023 = './src/PuLP/Etapa2/Dataton 2023 Etapa 2.xlsx'
@@ -267,26 +344,10 @@ for suc_cod in demanda_df.suc_cod.unique():
     # Encontrar inicios optimos de almuerzo y jornadas
 
     ## Semilla de los inicios de almuerzos y jornadas (No sigue una razón en particular)
-    franjaInicialJornadaTC = 0 # 7:30 am
-    franjaInicialJornadaMT = 36 # 4:30 pm
-    franjaInicialAlmuerzoTC = 16 # 11:30 am
     iniciosJornadas = []
     iniciosAlmuerzos = []
-
-    for indexTrabajador in range(len(trabajadores)):
-
-        if (tipoContrato[indexTrabajador] == "TC"):
-            iniciosJornadas += [franjaInicialJornadaTC]
-            franjaInicialJornadaTC += 2
-
-            iniciosAlmuerzos += [franjaInicialAlmuerzoTC]
-            franjaInicialAlmuerzoTC += 2
-        else:
-            iniciosJornadas += [franjaInicialJornadaMT]
-            franjaInicialJornadaTC -= 5
-
-            iniciosAlmuerzos += [-1] # Los MT no almuerzan
-
+    crearSemillaIniciosJornadasAlmuerzos(trabajadores, tipoContrato)
+    
     ##################
     # AQUI DEBERIA HABER UN CÓDIGO QUE ENCUENTRE LOS INICIOS OPTIMOS
     ##################
@@ -308,9 +369,11 @@ for suc_cod in demanda_df.suc_cod.unique():
         # Franjas de cada dia
         franjas = list(range(0, len(demanda_clientes)))  # De 0 (7:30am) hasta la ultima demanda registrada
  
-        # Modelo final por dia (Guardar progresivamente los resultados en un dataframe)
+        # Modelo final por dia
         optimizacionJornadas(trabajadores, tipoContrato, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas)
-        guardarDatosOptimos()
+
+        # Guardar progresivamente los resultados en un dataframe acumulador
+        guardarResultadoOptimoDia(trabajadores, tipoContrato, franjas, iniciosAlmuerzos, fecha_hora, suc_cod, fecha_actual)
 
 
     ##################
@@ -318,9 +381,8 @@ for suc_cod in demanda_df.suc_cod.unique():
     ##################
 
 
-##################
-# Luego de correr los modelos por sucursal Y por dia, guardar los resultados acumulados en un .csv
-##################
+# Luego de correr los modelos por sucursal y por dia, guardar los resultados acumulados en un .csv
+crearCSVResultadoOptimo()
 
 
 ##################
