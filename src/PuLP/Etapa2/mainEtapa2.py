@@ -370,7 +370,27 @@ def crearCSVResultadoOptimo():
 
     print("Asignación Óptima de Horarios realizada")
 
-    
+
+def resultadoSobredemanda(demanda_df, solucionOptima_df):
+    # Acomodar el df de demanda al mismo formato de la solución
+    demanda = demanda_df.copy()
+    demanda['fecha'] = demanda['fecha_hora'].dt.strftime("%d/%m/%Y")
+    demanda['hora'] = demanda['fecha_hora'].dt.strftime("%H:%M")
+    demanda = demanda.drop('fecha_hora', axis=1)
+
+    # agrupar por sucursal/dia/hora para saber cuandos trabajadores trabajan en esa agrupación
+    solucion = solucionOptima_df.copy()
+    solucion = solucion[solucion['estado'] == 'Trabaja'].groupby(['suc_cod', 'fecha', 'hora'])['estado'].count().reset_index()
+
+    # Hacer merge con la demanda para luego encontrar el resultado de la demanda - trabajadores
+    solucion = solucion.merge(demanda[['suc_cod', 'fecha', 'hora', 'demanda']], on=['suc_cod', 'fecha', 'hora'], how='left')
+    solucion = solucion.rename(columns={'estado': 'trabajadores'})
+    solucion['resultado'] = solucion['demanda'] - solucion['trabajadores']
+
+    # Encontrar la sobredemanda (solo sumar los valores positvos)
+    sobredemanda = solucion[solucion['resultado'] > 0]['resultado'].sum()
+
+    return sobredemanda
 
 
 #Inicio del Main
@@ -457,15 +477,14 @@ for suc_cod in demanda_df.suc_cod.unique():
         # Guardar progresivamente los resultados en un dataframe acumulador
         guardarResultadoOptimoDia(trabajadores, tipoContrato, franjas, iniciosAlmuerzos, fecha_hora, suc_cod, fecha_actual, diaSemana)
 
-
-# Luego de correr los modelos por sucursal y por dia, guardar los resultados acumulados en un .csv
-crearCSVResultadoOptimo()
-
 # Imprimir los estados de cada sucursal
 for suc_cod in demanda_df.suc_cod.unique():
     print(suc_cod, estadosModelos[suc_cod])
 
+# Resultado de la función objetivo 
+sobredemanda = resultadoSobredemanda(demanda_df, solucionOptima_df)
+print('La sobredemanda resultante es: ',sobredemanda)
 
-##################
-# AQUI DEBERIA IMPRIMIR LAS GRÁFICAS CORRESPONDIENTES A LA SOLUCIÓN Y EL RESULTADO FINAL DE LA FUNCIÓN OBJETIVO
-##################
+# Luego de correr los modelos por sucursal y por dia, guardar los resultados acumulados en un .csv
+crearCSVResultadoOptimo()
+
