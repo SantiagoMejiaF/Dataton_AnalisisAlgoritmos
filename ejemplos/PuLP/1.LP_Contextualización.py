@@ -43,10 +43,27 @@ La coma en esta línea separa la expresión matemática de la función objetivo,
 problema += 2 * x1 + 3 * x2 >= 20  # Restricción de recursos
 problema += x1 + 2 * x2 >= 10    # Restricción de recursos
 
+class stopwatch:
+    def __init__(self):
+        self.start = datetime.now()
+
+    @property
+    def time(self):
+        return datetime.now() - self.start
+
+    def reset(self):
+        self.start = datetime.now()
+
+from datetime import datetime
+# Inicializar la variable que contará el tiempo de ejecución
+timer = stopwatch()
 
 # Resuelve el problema
-problema.solve()
+solver = pulp.PULP_CBC_CMD(msg=0)
+problema.solve(solver)
 
+# Imprime el tiempo que se demoró en ejecutar el código
+print('El tiempo de ejecución es de: ', timer.time)
 # Muestra el resultado
 print("--------------------------------------------")
 print("Estado:", pulp.LpStatus[problema.status])
