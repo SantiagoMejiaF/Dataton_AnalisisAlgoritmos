@@ -279,7 +279,7 @@ def optimizacionJornadas(trabajadores, tipoContrato, franjas, demanda_clientes, 
 
 
 
-def crearSemillaIniciosJornadasAlmuerzos(trabajadores, tipoContrato):
+def crearSemillaIniciosJornadasAlmuerzosSabados(trabajadores, tipoContrato):
     iniciosJornadas = []
     iniciosAlmuerzos = []
 
@@ -307,20 +307,24 @@ def crearSemillaIniciosJornadasAlmuerzos(trabajadores, tipoContrato):
 
             iniciosAlmuerzos += [-1] # Los MT no almuerzan
     
-    return [iniciosJornadas, iniciosAlmuerzos]
+    # En caso de que sea sabado, no hay almuerzos y los inicios de jornadas puede ser diferente al semanal
+    iniciosSabados = []
+    franjaInicialJornada = 0 # 7:30 am
+    for i in trabajadores:
+        iniciosSabados += [franjaInicialJornada]
+        franjaInicialJornada += 1
+    
+    return [iniciosJornadas, iniciosAlmuerzos, iniciosSabados]
 
 
-def conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal):    
+def conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados):    
+
     # Variables globales
     trabajadores = list(trabajadores_df_sucursal.documento)
     tipoContrato = list(trabajadores_df_sucursal.contrato)
 
-    ## Semilla de los inicios de almuerzos y jornadas (No sigue una razón en particular)
-    iniciosSemilla = crearSemillaIniciosJornadasAlmuerzos(trabajadores, tipoContrato)
-    iniciosJornadas = iniciosSemilla[0]
-
     # Valor inicial de la sobredemanda optima e inicios optimos de las jornadas
-    sobredemandaOptima = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas)
+    sobredemandaOptima = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
     iniciosJornadasOptimo = iniciosJornadas.copy()
     
     for indexTrabajador in range(len(trabajadores)):
@@ -339,7 +343,7 @@ def conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabaj
             iniciosJornadasActual[indexTrabajador] = franjaInicialTrabajador
 
             # Correr modelo con la nueva combinación de iniciosJornadas y calcula su sobredemanda
-            sobredemandaActual = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadasActual)
+            sobredemandaActual = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadasActual, iniciosAlmuerzos, iniciosSabados)
 
             if (sobredemandaActual < sobredemandaOptima):
                 sobredemandaOptima = sobredemandaActual
@@ -347,6 +351,75 @@ def conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabaj
     
     return iniciosJornadasOptimo
 
+
+def conseguirIniciosAlmuerzosOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados):
+
+    # Variables globales
+    trabajadores = list(trabajadores_df_sucursal.documento)
+    tipoContrato = list(trabajadores_df_sucursal.contrato)
+
+    # Valor inicial de la sobredemanda optima e inicios optimos de las jornadas
+    sobredemandaOptima = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+    iniciosAlmuerzosOptimo = iniciosAlmuerzos.copy()
+    
+    for indexTrabajador in range(len(trabajadores)):
+
+        contrato = tipoContrato[indexTrabajador]
+        if (contrato == "TC"):
+            franjaMinima = 16
+            franjaMaxima = 24 # Inclusive
+        else:
+            franjaMinima = 0
+            franjaMaxima = -1
+
+        for franjaInicialTrabajador in range(franjaMinima,franjaMaxima+1):
+            # Nueva combinación de inicio de almuerso en base al ultimo optimo encontrado
+            iniciosAlmuerzosActual = iniciosAlmuerzosOptimo.copy()
+            iniciosAlmuerzosActual[indexTrabajador] = franjaInicialTrabajador
+
+            # Correr modelo con la nueva combinación de iniciosJornadas y calcula su sobredemanda
+            sobredemandaActual = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzosActual, iniciosSabados)
+
+            if (sobredemandaActual < sobredemandaOptima):
+                sobredemandaOptima = sobredemandaActual
+                iniciosAlmuerzosOptimo = iniciosAlmuerzosActual.copy()
+    
+    return iniciosAlmuerzosOptimo
+
+
+def conseguirIniciosSabadosOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados):
+
+    # Variables globales
+    trabajadores = list(trabajadores_df_sucursal.documento)
+    tipoContrato = list(trabajadores_df_sucursal.contrato)
+
+    # Valor inicial de la sobredemanda optima e inicios optimos de las jornadas
+    sobredemandaOptima = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+    iniciosSabadosOptimo = iniciosSabados.copy()
+    
+    for indexTrabajador in range(len(trabajadores)):
+
+        contrato = tipoContrato[indexTrabajador]
+        if (contrato == "TC"):
+            franjaMinima = 0
+            franjaMaxima = 9 # Inclusive
+        else:
+            franjaMinima = 0
+            franjaMaxima = 13 # Inclusive
+
+        for franjaInicialTrabajador in range(franjaMinima,franjaMaxima+1):
+            # Nueva combinación de inicio de sabados en base al ultimo optimo encontrado
+            iniciosSabadosActual = iniciosSabadosOptimo.copy()
+            iniciosSabadosActual[indexTrabajador] = franjaInicialTrabajador
+
+            # Correr modelo con la nueva combinación de iniciosJornadas y calcula su sobredemanda
+            sobredemandaActual = optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabadosActual)
+
+            if (sobredemandaActual < sobredemandaOptima):
+                sobredemandaOptima = sobredemandaActual
+                iniciosSabadosOptimo = iniciosSabadosActual.copy()
+    
+    return iniciosSabadosOptimo
 
 
 def crearDataframeOptimoVacio(solucionOptima_df):
@@ -439,7 +512,7 @@ def resultadoSobredemanda(demanda_df, solucionOptima_df):
     return sobredemanda
 
 
-def optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas):
+def optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados):
     global problem
     global solucionOptimaSucursal_df
 
@@ -450,10 +523,6 @@ def optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_
     # Variables completas 
     trabajadores = list(trabajadores_df_sucursal.documento)
     tipoContrato = list(trabajadores_df_sucursal.contrato)
-
-    ## Semilla de los inicios de almuerzos y jornadas (No sigue una razón en particular)
-    iniciosSemilla = crearSemillaIniciosJornadasAlmuerzos(trabajadores, tipoContrato)
-    iniciosAlmuerzos = iniciosSemilla[1]
 
     # Fechas unicas
     fechasUnicas = demanda_df_sucursal.fecha_hora.dt.date.unique()
@@ -475,17 +544,10 @@ def optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_
         
         # Franjas de cada dia
         franjas = list(range(0, len(demanda_clientes)))  # De 0 (7:30am) hasta la ultima demanda registrada
- 
+
         # En caso de que sea sabado, no hay almuerzos y los inicios de jornadas puede ser diferente al semanal
         if (diaSemana == 5):
-            iniciosJornadas = []
-            iniciosAlmuerzos = []
-            franjaInicialJornada = 0 # 7:30 am
-
-            for i in trabajadores:
-                iniciosJornadas += [franjaInicialJornada]
-                franjaInicialJornada += 1
-                iniciosAlmuerzos += [-1]
+            iniciosJornadas = iniciosSabados.copy()
 
         # Modelo por dia
         optimizacionJornadas(trabajadores, tipoContrato, franjas, demanda_clientes, iniciosAlmuerzos, iniciosJornadas, diaSemana)
@@ -534,11 +596,29 @@ for suc_cod in demanda_df.suc_cod.unique():
     demanda_df_sucursal = demanda_df[(demanda_df["suc_cod"] == suc_cod)]
     trabajadores_df_sucursal = trabajadores_df[(trabajadores_df["suc_cod"] == suc_cod)]
 
-    # Encontrar inicios optimos de jornadas de la sucursal
-    iniciosJornadas = conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal)
+    # Variables globales 
+    trabajadores = list(trabajadores_df_sucursal.documento)
+    tipoContrato = list(trabajadores_df_sucursal.contrato)
+
+    # Semilla de los inicios de almuerzos, jornadas y sabados (No sigue una razón en particular)
+    iniciosSemilla = crearSemillaIniciosJornadasAlmuerzosSabados(trabajadores, tipoContrato)
+    iniciosJornadas = iniciosSemilla[0]
+    iniciosAlmuerzos = iniciosSemilla[1]
+    iniciosSabados = iniciosSemilla[2]
+
+    for iteracion in range(2):
+        # Encontrar inicios optimos de jornadas de la sucursal
+        iniciosJornadas = conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+
+        # Encontrar inicios optimos de almuerzos de la sucursal
+        iniciosAlmuerzos = conseguirIniciosAlmuerzosOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+
+        # Encontrar inicios optimos de la jornada del sabado de la sucursal
+        iniciosSabados = conseguirIniciosSabadosOptimosSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+
 
     # Modelo final que optimiza las jornadas laborales por esa sucursal
-    sobredemanda += optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas)
+    sobredemanda += optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
 
     solucionOptima_df = pd.concat([solucionOptima_df, solucionOptimaSucursal_df], ignore_index=True)
 
@@ -548,4 +628,3 @@ print('La sobredemanda resultante es: ', sobredemanda)
 
 # Luego de correr los modelos por sucursal y por dia, guardar los resultados acumulados en un .csv
 crearCSVResultadoOptimo()
-
