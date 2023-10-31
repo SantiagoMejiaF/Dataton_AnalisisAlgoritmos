@@ -363,7 +363,10 @@ def conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabaj
 
     # Valor inicial de la sobredemanda optima e inicios optimos de las jornadas
     sobredemandaOptima = optimizaciónJornadasSucursal(
-        suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+        suc_cod, 
+        demanda_df_sucursal, 
+        trabajadores_df_sucursal, 
+        iniciosJornadas, iniciosAlmuerzos, iniciosSabados)[0]
     iniciosJornadasOptimo = iniciosJornadas.copy()
 
     for indexTrabajador in range(len(trabajadores)):
@@ -383,7 +386,11 @@ def conseguirIniciosJornadasOptimosSucursal(suc_cod, demanda_df_sucursal, trabaj
 
             # Correr modelo con la nueva combinación de iniciosJornadas y calcula su sobredemanda
             sobredemandaActual = optimizaciónJornadasSucursal(
-                suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadasActual, iniciosAlmuerzos, iniciosSabados)
+                suc_cod, 
+                demanda_df_sucursal, 
+                trabajadores_df_sucursal, 
+                iniciosJornadasActual, 
+                iniciosAlmuerzos, iniciosSabados)[0]
 
             if (sobredemandaActual < sobredemandaOptima):
                 sobredemandaOptima = sobredemandaActual
@@ -400,7 +407,12 @@ def conseguirIniciosAlmuerzosOptimosSucursal(suc_cod, demanda_df_sucursal, traba
 
     # Valor inicial de la sobredemanda optima e inicios optimos de las jornadas
     sobredemandaOptima = optimizaciónJornadasSucursal(
-        suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+        suc_cod, 
+        demanda_df_sucursal, 
+        trabajadores_df_sucursal, 
+        iniciosJornadas, 
+        iniciosAlmuerzos, 
+        iniciosSabados)[0]
     iniciosAlmuerzosOptimo = iniciosAlmuerzos.copy()
 
     for indexTrabajador in range(len(trabajadores)):
@@ -420,7 +432,12 @@ def conseguirIniciosAlmuerzosOptimosSucursal(suc_cod, demanda_df_sucursal, traba
 
             # Correr modelo con la nueva combinación de iniciosJornadas y calcula su sobredemanda
             sobredemandaActual = optimizaciónJornadasSucursal(
-                suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzosActual, iniciosSabados)
+                suc_cod, 
+                demanda_df_sucursal, 
+                trabajadores_df_sucursal,
+                iniciosJornadas, 
+                iniciosAlmuerzosActual, 
+                iniciosSabados)[0]
 
             if (sobredemandaActual < sobredemandaOptima):
                 sobredemandaOptima = sobredemandaActual
@@ -437,7 +454,12 @@ def conseguirIniciosSabadosOptimosSucursal(suc_cod, demanda_df_sucursal, trabaja
 
     # Valor inicial de la sobredemanda optima e inicios optimos de las jornadas
     sobredemandaOptima = optimizaciónJornadasSucursal(
-        suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
+        suc_cod, 
+        demanda_df_sucursal, 
+        trabajadores_df_sucursal, 
+        iniciosJornadas, 
+        iniciosAlmuerzos, 
+        iniciosSabados)[0]
     iniciosSabadosOptimo = iniciosSabados.copy()
 
     for indexTrabajador in range(len(trabajadores)):
@@ -457,7 +479,12 @@ def conseguirIniciosSabadosOptimosSucursal(suc_cod, demanda_df_sucursal, trabaja
 
             # Correr modelo con la nueva combinación de iniciosJornadas y calcula su sobredemanda
             sobredemandaActual = optimizaciónJornadasSucursal(
-                suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabadosActual)
+                suc_cod, 
+                demanda_df_sucursal, 
+                trabajadores_df_sucursal, 
+                iniciosJornadas, 
+                iniciosAlmuerzos, 
+                iniciosSabadosActual)[0]
 
             if (sobredemandaActual < sobredemandaOptima):
                 sobredemandaOptima = sobredemandaActual
@@ -530,7 +557,7 @@ def guardarResultadoOptimoDia(solucionOptimaSucursal_df, trabajadores, tipoContr
     return solucionOptimaSucursal_df
 
 
-def crearCSVResultadoOptimo():
+def crearCSVResultadoOptimo(df, name = None):
     global solucionOptima_df
 
     # Archivo CSV
@@ -566,7 +593,6 @@ def resultadoSobredemanda(demanda_df, solucionOptima_df):
 
 def optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados):
     global problem
-    global solucionOptimaSucursal_df
 
     # Crea la estructura del dataframe de resultados de la sucursal
     solucionOptimaSucursal_df = pd.DataFrame()
@@ -613,7 +639,15 @@ def optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_
 
         # Guarda los resultados del dia en un dataframe acumulador
         solucionOptimaSucursal_df = guardarResultadoOptimoDia(
-            solucionOptimaSucursal_df, trabajadores, tipoContrato, franjas, iniciosAlmuerzos, fecha_hora, suc_cod, fecha_actual, diaSemana)
+            solucionOptimaSucursal_df, 
+            trabajadores, 
+            tipoContrato, 
+            franjas, 
+            iniciosAlmuerzos, 
+            fecha_hora, 
+            suc_cod, 
+            fecha_actual, 
+            diaSemana)
 
     # Resultado de la sobredemanda de la sucursal
     if (estadosModelosSucursal == ['Optimal', 'Optimal', 'Optimal', 'Optimal', 'Optimal', 'Optimal']):
@@ -622,19 +656,27 @@ def optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal, trabajadores_df_
     else:
         sobredemanda = 1000000
 
-    return sobredemanda
+    return sobredemanda, solucionOptima_df
 
 
 class stopwatch:
     def __init__(self):
         self.start = datetime.now()
+        self.start_pivot = datetime.now()
+        self.subtimers = {}
 
     @property
     def time(self):
-        return datetime.now() - self.start
+        return datetime.now() - self.startime
 
     def reset(self):
         self.start = datetime.now()
+    
+    def add_subtimer(self, name):
+        self.subtimers[name] = stopwatch()
+
+    def time_subtimer(self, name):
+        return self.subtimers[name].time
 
 
 # Inicio del Main
@@ -642,8 +684,6 @@ class stopwatch:
 # os.chdir("..")
 # os.chdir("..")
 
-old_stdout = sys.stdout  # backup current stdout
-sys.stdout = open(os.devnull, "w")
 
 
 # Inicializar la variable que contará el tiempo de ejecución
@@ -665,6 +705,115 @@ trabajadores_df = pd.read_excel(dataton2023, sheet_name='workers')
 
 # Realizar el mismo proceso por cada sucursal (5 sucursales)
 sobredemanda = 0
+class Sucursal_pulp:
+    def __init__(self, suc_cod) -> None:
+        # DataFrames por sucural
+        self.suc_cod =  suc_cod
+        self.sobredemanda = []
+        self.demanda_df_sucursal = demanda_df[(demanda_df["suc_cod"] == suc_cod)]
+        self.df_optimo = None
+        self.trabajadores_df_sucursal = trabajadores_df[(
+            trabajadores_df["suc_cod"] == suc_cod)]
+
+        # Variables globales
+        self.trabajadores = list(self.trabajadores_df_sucursal.documento)
+        self.tipoContrato = list(self.trabajadores_df_sucursal.contrato)
+
+        # Semilla de los inicios de almuerzos, jornadas y sabados (No sigue una razón en particular)
+        self.iniciosSemilla = crearSemillaIniciosJornadasAlmuerzosSabados(
+            self.trabajadores, 
+            self.tipoContrato)
+        self.iniciosJornadas = self.iniciosSemilla[0]
+        self.iniciosAlmuerzos = self.iniciosSemilla[1]
+        self.iniciosSabados = self.iniciosSemilla[2]
+    
+    def step(self):
+          # Encontrar inicios optimos de jornadas de la sucursal
+        iniciosJornadas = conseguirIniciosJornadasOptimosSucursal(
+            self.suc_cod, 
+            self.demanda_df_sucursal, 
+            self.trabajadores_df_sucursal, 
+            self.iniciosJornadas, 
+            self.iniciosAlmuerzos, 
+            self.iniciosSabados
+            )
+
+        # Encontrar inicios optimos de almuerzos de la sucursal
+        iniciosAlmuerzos = conseguirIniciosAlmuerzosOptimosSucursal(
+            self.suc_cod, 
+            self.demanda_df_sucursal, 
+            self.trabajadores_df_sucursal, 
+            self.iniciosJornadas, 
+            self.iniciosAlmuerzos, 
+            self.iniciosSabados
+            )
+
+        # Encontrar inicios optimos de la jornada del sabado de la sucursal
+        iniciosSabados = conseguirIniciosSabadosOptimosSucursal(
+            self.suc_cod, 
+            self.demanda_df_sucursal, 
+            self.trabajadores_df_sucursal, 
+            self.iniciosJornadas, 
+            self.iniciosAlmuerzos, 
+            self.iniciosSabados)
+        
+         # Modelo final que optimiza las jornadas laborales por esa sucursal
+        demanda, df_optimo = optimizaciónJornadasSucursal(
+            self.suc_cod, 
+            self.demanda_df_sucursal,
+            self.trabajadores_df_sucursal, 
+            self.iniciosJornadas, 
+            self.iniciosAlmuerzos, 
+            self.iniciosSabados
+            )
+        self.df_optimo = df_optimo
+        self.sobredemanda.append(demanda)
+        
+    def show_iter(self):
+        pass
+
+
+class result_output:
+    def __init__(self, name = None, path = None) -> None:
+        self.df = pd.DataFrame()
+        self.df = crearDataframeOptimoVacio(self.df)
+        self.path = "".join(["./src/PuLP/Etapa2/",name,".csv"]) if name else ""
+
+    def juntarSucursales(self, sucursales):
+        df = pd.DataFrame()
+        df = crearDataframeOptimoVacio(df)
+        for sucursal in sucursales:
+            df = pd.concat(
+            [df, sucursal.df_optimo], ignore_index=True)
+        return df
+
+    def crearCSVResultadoOptimo(self, sucursales):
+        csv = self.juntarSucursales(sucursales)
+        csv.to_csv(self.path, index=False)
+
+sucursales = [Sucursal_pulp(suc_cod) for suc_cod in demanda_df.suc_cod.unique()]
+print('Inicio')
+timer = stopwatch()
+while True:
+    sobredemanda = 0
+    i = 0
+    result = result_output("solucionOptimaEtapa2"+"-"+str(i))
+    timer.add_subtimer('Iteracion')
+    print("Iteración: " + str(i))
+    for sucursal in sucursales:
+        timer.add_subtimer('sucursal')
+        print("Iniciando sucursal: ", sucursal.suc_cod)
+        sucursal.step()
+        print(timer.subtimers['sucursal'].time)
+        sobredemanda += sucursal.sobredemanda[-1]
+    
+    result.crearCSVResultadoOptimo(sucursales)
+    print('El tiempo de ejecución es de: ', timer.time, 
+          " Iteracion: ", timer.subtimers['Iteracion'].time)
+    print('La sobredemanda resultante es: ', sobredemanda)
+    i+=1
+
+
 for suc_cod in demanda_df.suc_cod.unique():
 
     # DataFrames por sucursal
@@ -696,12 +845,14 @@ for suc_cod in demanda_df.suc_cod.unique():
         iniciosSabados = conseguirIniciosSabadosOptimosSucursal(
             suc_cod, demanda_df_sucursal, trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
 
+       
     # Modelo final que optimiza las jornadas laborales por esa sucursal
     sobredemanda += optimizaciónJornadasSucursal(suc_cod, demanda_df_sucursal,
                                                  trabajadores_df_sucursal, iniciosJornadas, iniciosAlmuerzos, iniciosSabados)
 
     solucionOptima_df = pd.concat(
         [solucionOptima_df, solucionOptimaSucursal_df], ignore_index=True)
+
 
 
 # Resultado de la función objetivo
