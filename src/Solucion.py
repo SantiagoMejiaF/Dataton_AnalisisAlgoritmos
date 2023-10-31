@@ -74,12 +74,12 @@ def generarHorario(df_solucion: pd.DataFrame):
     pivot_df.to_excel('.\src\PuLP\horario.xlsx')
     print(pivot_df)
 
-import sys
-import os
-import Solucion
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# df_solucion = pd.read_excel('.\src\PuLP\solucionOptima.xlsx')
-# Solucion.mostrarSolucion(df_solucion)
+# import sys
+# import os
+# import Solucion
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# # df_solucion = pd.read_excel('.\src\PuLP\solucionOptima.xlsx')
+# # Solucion.mostrarSolucion(df_solucion)
 
-df_solucion = pd.read_csv('.\src\PuLP\solucionOptima.csv')
-Solucion.generarHorario(df_solucion)
+# df_solucion = pd.read_csv('.\src\PuLP\solucionOptima.csv')
+# Solucion.generarHorario(df_solucion)
