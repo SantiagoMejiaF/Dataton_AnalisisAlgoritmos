@@ -110,10 +110,10 @@ def agregarRestriccionTrabajaContinuoExtremosJornadaModelo(trabajadores, tipoCon
         # Cada trabajador tiene que trabajar 1 hora continua antes de finalizar su jornada
         if (contrato == "TC"):
             # El trabajador TC finaliza su jornada 34 franjas despues de iniciar la jornada (Se suma almuerzo)
-            problem += pulp.lpSum(x[(i, t)] for t in franjas[franjaInicial+30:franjaInicial+tiempoMaxTC]) == 4
+            problem += pulp.lpSum(x[(i, t)] for t in franjas[franjaInicial+tiempoMaxTC-4:franjaInicial+tiempoMaxTC]) == 4
         else:
             # El trabajador MT finaliza su jornada 16 franjas despues de iniciar la jornada
-            problem += pulp.lpSum(x[(i, t)] for t in franjas[franjaInicial+12:franjaInicial+tiempoMaxMT]) == 4
+            problem += pulp.lpSum(x[(i, t)] for t in franjas[franjaInicial+tiempoMaxMT-4:franjaInicial+tiempoMaxMT]) == 4
 
 
 def agregarRestriccionPausasActivasModelo(trabajadores, tipoContrato, franjas, x, iniciosAlmuerzos, iniciosJornadas):
@@ -265,7 +265,7 @@ def optimizacionJornadas(trabajadores, tipoContrato, franjas, demanda_clientes, 
         agregarRestriccionTrabajaContinuoExtremosJornadaModelo(trabajadores, tipoContrato, franjas, x, iniciosJornadas, tiempoMaxTC + 6, tiempoMaxMT)
     else:
         # el sabado no hay almuerzo 
-        agregarRestriccionNoTrabajaDespuesFinalJornadaModelo(trabajadores, tipoContrato, franjas, x, iniciosJornadas, tiempoMaxTC, tiempoMaxMT)
+        agregarRestriccionTrabajaContinuoExtremosJornadaModelo(trabajadores, tipoContrato, franjas, x, iniciosJornadas, tiempoMaxTC, tiempoMaxMT)
     
     
     ## Se debe sacar 1 pausa activa despues de trabajar minimo 1 hora o maximo 2 horas
