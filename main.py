@@ -7,4 +7,5 @@ def main(optimizacion):
 
 
 if __name__ == "__main__":
-    main(modelo_pulp)
+    # main(modelo_pulp)
+    test_Restricciones_v01()
