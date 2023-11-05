@@ -34,12 +34,13 @@ def test_Restricciones_v01():
 
     # Trabajador con rango válido según las resitrcciones
     print(Trabajador(
-        [T]*8+[P]+[T]*8+[A]*6+[T] * 8+[P]+[T]*6+[N]*8
+        [T]*8+[P]+[T]*8+[A]*6+[T] * 8+[P]+[T]*6+[N]*8,
+        np.random.randint(0, 100000)
     ).rangoValido())
 
     # Prueba enviando datos aleatorios
     from src.Parametros import Parametros as Par
-    sucursal = [Trabajador(generarTrabajador())
+    sucursal = [Trabajador(generarTrabajador(), np.random.randint(0, 100000))
                 for i in range(Par.CANTIDADEMPLEADOS)]
 
     for trabajador in sucursal:
