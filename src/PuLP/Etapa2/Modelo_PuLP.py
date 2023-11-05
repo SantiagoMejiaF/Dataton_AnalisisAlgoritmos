@@ -1,4 +1,3 @@
-from datetime import datetime
 import pandas as pd
 import pulp
 
@@ -357,6 +356,91 @@ class modelo(pulp.LpProblem):
                         self += pulp.lpSum(x[(i, t)]
                                            for t in franjas[franjaEspecifica:franjaEspecifica+9]) <= 8
 
+    def restriccionesInicios(
+            self,
+            trabajadores,
+            tipoContrato,
+            franjas,
+            demanda_clientes,
+            iniciosAlmuerzos,
+            iniciosJornadas,
+            diaSemana,
+            tiempoMaxTC,
+            tiempoMaxMT):
+
+        # Cada trabajador tiene que trabajar unas horas al dia determinadas por el tipo de contrato
+        # Pero hay que tener en cuenta que hay pausas activas. Entonces esas franjas son la referencias maximas.
+        self.agregarRestriccionFranjasTrabajadasModelo(
+            trabajadores, tipoContrato, franjas, self.x, tiempoMaxTC, tiempoMaxMT)
+
+        # Cada franja debe ser atendida por al menos un trabajador (Solo si la demanda es mayor o igual a 1)
+        self.agregarRestriccionFranjaAtendidaTrabajadorModelo(
+            trabajadores, franjas, demanda_clientes, self.x)
+
+        # Cada trabajador no puede trabajar antes de su jornada inicio
+        self.agregarRestriccionNoTrabajaAntesInicioJornadaModelo(
+            trabajadores, franjas, self.x, iniciosJornadas)
+
+        # Cada trabajador no puede trabajar despues de su jornada final
+        if (diaSemana != 5):
+            # En semana hay que tener en cuenta el tiempo del almuerzo para saber la jornada final
+            self.agregarRestriccionNoTrabajaDespuesFinalJornadaModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC + 6, tiempoMaxMT)
+        else:
+            # el sabado no hay almuerzo
+            self.agregarRestriccionNoTrabajaDespuesFinalJornadaModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC, tiempoMaxMT)
+
+    def restriccionesAlmuerzos(
+            self,
+            trabajadores,
+            tipoContrato,
+            franjas,
+            demanda_clientes,
+            iniciosAlmuerzos,
+            iniciosJornadas,
+            diaSemana,
+            tiempoMaxTC,
+            tiempoMaxMT):
+        # En dia de semana los trabajadores TC sacan almuerzo (No aplica para el sabado)
+        if (diaSemana != 5):
+            # Cada trabajador TC debe sacar 1h 30 min continua de almuerzo (6 franjas)
+            # El bloque del almuerzo corresponde entre las franjas 16 y 29 (Inclusives)
+            # Cada trabajador debe iniciar a almorzar entre la franja 16 y 24 (Inclusives)
+            self.agregarRestriccionAlmuerzoContinuoModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosAlmuerzos)
+
+            # Cada trabajador TC tiene que trabajar 1 hora continua antes y despues del almuerzo
+            self.agregarRestriccionTrabajaContinuoAntesDespuesAlmuerzoModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosAlmuerzos)
+
+        # Cada trabajador tiene que trabajar 1 hora continua despues de su jornada inicio y antes de su jornada final (Es decir, trabajar 1 hora continua en los extremos)
+        if (diaSemana != 5):
+            # En semana hay que tener en cuenta el tiempo del almuerzo para saber la jornada final
+            self.agregarRestriccionTrabajaContinuoExtremosJornadaModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC + 6, tiempoMaxMT)
+        else:
+            # el sabado no hay almuerzo
+            self.agregarRestriccionTrabajaContinuoExtremosJornadaModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC, tiempoMaxMT)
+
+    def restriccionesPausasActivas(
+            self,
+            trabajadores,
+            tipoContrato,
+            franjas,
+            demanda_clientes,
+            iniciosAlmuerzos,
+            iniciosJornadas,
+            diaSemana):
+        # Se debe sacar 1 pausa activa despues de trabajar minimo 1 hora o maximo 2 horas
+        if (diaSemana != 5):
+            self.agregarRestriccionPausasActivasModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosAlmuerzos, iniciosJornadas)
+        else:
+            self.agregarRestriccionPausasActivasSabadoModelo(
+                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas)
+
     def optimizacionJornadas(
             self,
             trabajadores,
@@ -393,58 +477,39 @@ class modelo(pulp.LpProblem):
 
         # Agrega las restricciones de las variables de decisión
 
-        # Cada trabajador tiene que trabajar unas horas al dia determinadas por el tipo de contrato
-        # Pero hay que tener en cuenta que hay pausas activas. Entonces esas franjas son la referencias maximas.
-        self.agregarRestriccionFranjasTrabajadasModelo(
-            trabajadores, tipoContrato, franjas, self.x, tiempoMaxTC, tiempoMaxMT)
+        self.restriccionesInicios(
+            trabajadores,
+            tipoContrato,
+            franjas,
+            demanda_clientes,
+            iniciosAlmuerzos,
+            iniciosJornadas,
+            diaSemana,
+            tiempoMaxTC,
+            tiempoMaxMT
+        )
 
-        # Cada franja debe ser atendida por al menos un trabajador (Solo si la demanda es mayor o igual a 1)
-        self.agregarRestriccionFranjaAtendidaTrabajadorModelo(
-            trabajadores, franjas, demanda_clientes, self.x)
+        self.restriccionesAlmuerzos(
+            trabajadores,
+            tipoContrato,
+            franjas,
+            demanda_clientes,
+            iniciosAlmuerzos,
+            iniciosJornadas,
+            diaSemana,
+            tiempoMaxTC,
+            tiempoMaxMT
+        )
 
-        # En dia de semana los trabajadores TC sacan almuerzo (No aplica para el sabado)
-        if (diaSemana != 5):
-            # Cada trabajador TC debe sacar 1h 30 min continua de almuerzo (6 franjas)
-            # El bloque del almuerzo corresponde entre las franjas 16 y 29 (Inclusives)
-            # Cada trabajador debe iniciar a almorzar entre la franja 16 y 24 (Inclusives)
-            self.agregarRestriccionAlmuerzoContinuoModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosAlmuerzos)
-
-            # Cada trabajador TC tiene que trabajar 1 hora continua antes y despues del almuerzo
-            self.agregarRestriccionTrabajaContinuoAntesDespuesAlmuerzoModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosAlmuerzos)
-
-        # Cada trabajador no puede trabajar antes de su jornada inicio
-        self.agregarRestriccionNoTrabajaAntesInicioJornadaModelo(
-            trabajadores, franjas, self.x, iniciosJornadas)
-
-        # Cada trabajador no puede trabajar despues de su jornada final
-        if (diaSemana != 5):
-            # En semana hay que tener en cuenta el tiempo del almuerzo para saber la jornada final
-            self.agregarRestriccionNoTrabajaDespuesFinalJornadaModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC + 6, tiempoMaxMT)
-        else:
-            # el sabado no hay almuerzo
-            self.agregarRestriccionNoTrabajaDespuesFinalJornadaModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC, tiempoMaxMT)
-
-        # Cada trabajador tiene que trabajar 1 hora continua despues de su jornada inicio y antes de su jornada final (Es decir, trabajar 1 hora continua en los extremos)
-        if (diaSemana != 5):
-            # En semana hay que tener en cuenta el tiempo del almuerzo para saber la jornada final
-            self.agregarRestriccionTrabajaContinuoExtremosJornadaModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC + 6, tiempoMaxMT)
-        else:
-            # el sabado no hay almuerzo
-            self.agregarRestriccionTrabajaContinuoExtremosJornadaModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas, tiempoMaxTC, tiempoMaxMT)
-
-        # Se debe sacar 1 pausa activa despues de trabajar minimo 1 hora o maximo 2 horas
-        if (diaSemana != 5):
-            self.agregarRestriccionPausasActivasModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosAlmuerzos, iniciosJornadas)
-        else:
-            self.agregarRestriccionPausasActivasSabadoModelo(
-                trabajadores, tipoContrato, franjas, self.x, iniciosJornadas)
+        self.restriccionesPausasActivas(
+            trabajadores,
+            tipoContrato,
+            franjas,
+            demanda_clientes,
+            iniciosAlmuerzos,
+            iniciosJornadas,
+            diaSemana
+        )
 
         # Resuelve el problema
         solver = pulp.PULP_CBC_CMD(msg=0)
@@ -729,7 +794,7 @@ class Sucursal_pulp:
         # DataFrames por sucural
         self.suc_cod = suc_cod
         self.name = "sucursal " + str(suc_cod)
-        self.sobredemanda = []
+        self._sobredemanda = []
         self.demanda_df_sucursal = demanda_df[(
             demanda_df["suc_cod"] == suc_cod)]
         self.trabajadores_df_sucursal = trabajadores_df[(
@@ -747,6 +812,13 @@ class Sucursal_pulp:
         self.iniciosJornadas = self.iniciosSemilla[0]
         self.iniciosAlmuerzos = self.iniciosSemilla[1]
         self.iniciosSabados = self.iniciosSemilla[2]
+
+    @property
+    def sobredemanda(self):
+        return self._sobredemanda[-1]
+
+    def iteracion():
+        return True
 
     def step(self):
         # Encontrar inicios optimos de jornadas de la sucursal
@@ -788,99 +860,7 @@ class Sucursal_pulp:
             self.iniciosSabados
         )
         self.df_optimo = df_optimo
-        self.sobredemanda.append(demanda)
+        self._sobredemanda.append(demanda)
 
     def show_iter(self):
         pass
-
-
-class result_output:
-    def __init__(self, name=None, path=None) -> None:
-        self.df = pd.DataFrame()
-        self.df = Services.crearDataframeOptimoVacio(self.df)
-        self.path = "".join(
-            ["./src/PuLP/Etapa2/", name, ".csv"]) if name else ""
-
-    def juntarSucursales(self, sucursales):
-        df = pd.DataFrame()
-        df = Services.crearDataframeOptimoVacio(df)
-        for sucursal in sucursales:
-            df = pd.concat(
-                [df, sucursal.df_optimo], ignore_index=True)
-        return df
-
-    def crearCSVResultadoOptimo(self, sucursales):
-        csv = self.juntarSucursales(sucursales)
-        csv.to_csv(self.path, index=False)
-
-
-def Dataset(directory: str, dataset: str) -> None:
-    directory = directory
-    dataset = directory + dataset
-
-    demanda_df = pd.read_excel(dataset, sheet_name='demand')
-    trabajadores_df = pd.read_excel(dataset, sheet_name='workers')
-
-    return demanda_df, trabajadores_df
-
-
-class stopwatch:
-    def __init__(self, show=False, name: str = "", end=None):
-        self.start = datetime.now()
-        self.subtimers = {}
-        self.show = show
-        if show:
-            print("Inicio " + name + ": " if name else 'Inicio: ', end=end)
-
-    @property
-    def current_time(self):
-        t = datetime.now() - self.start
-        if self.show:
-            print(" ".join(["Time: ", str(t)]))
-
-        return t
-
-    def reset(self):
-        self.start = datetime.now()
-
-    def add_subtimer(self, name, end=None):
-        self.subtimers[name] = stopwatch(show=self.show, name=name, end=end)
-
-
-def ejecutar_modelo():
-    # Inicializa la variable que tendrá el modelo de optimización
-    # problem = pulp.LpProblem("OptimizacionJornadasLaborales", pulp.LpMinimize)
-
-    # DataFrames generales
-    demanda_df, trabajadores_df = Dataset(
-        './src/PuLP/Etapa2/',
-        'Dataton 2023 Etapa 2.xlsx')
-
-    sucursales = [Sucursal_pulp(suc_cod, demanda_df, trabajadores_df)
-                  for suc_cod in demanda_df.suc_cod.unique()]
-
-    timer = stopwatch(show=True)
-    i = 0
-    while True:
-        sobredemanda = 0
-
-        timer.add_subtimer("Iteracion", end="")
-        print(i, ":", sep="", end="\n")
-
-        for sucursal in sucursales:
-            timer.add_subtimer(sucursal.name, end=" ")
-
-            sucursal.step()
-
-            timer.subtimers[sucursal.name].current_time
-            sobredemanda += sucursal.sobredemanda[-1]
-
-        result_output("solucionOptimaEtapa2"+"-"+str(i)
-                      ).crearCSVResultadoOptimo(sucursales)
-
-        print('\nEl tiempo de ejecución: \nGlobal', end=" ")
-        timer.current_time
-        print('Iteración', end=" ")
-        timer.subtimers['Iteracion'].current_time
-        print('La sobredemanda resultante es: ', sobredemanda, end="\n\n")
-        i += 1
