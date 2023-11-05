@@ -692,7 +692,7 @@ def optimizaciónJornadasSucursal(
             iniciosJornadas = iniciosSabados.copy()
 
         # Crea un problema (Modelo) de minimización lineal
-        problem = modelo()
+        problem = modelo(trabajadores, franjas)
 
         # Modelo por dia
         problem.optimizacionJornadas(trabajadores, tipoContrato, franjas,
