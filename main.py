@@ -10,10 +10,10 @@ from src.Parametros import Parametros
 def main(Modelo):
 
     demanda_df, trabajadores_df = Dataset(
-        # './Datasets/Dataton 2023 Etapa 2.xlsx')
-        './Datasets/Dataton 2023 Etapa 2 - simplificada.xlsx')
+        './Datasets/Dataton 2023 Etapa 2.xlsx')
+    # './Datasets/Dataton 2023 Etapa 2 - simplificada.xlsx')
 
-    sucursales = [Modelo(suc_cod, demanda_df, trabajadores_df)
+    sucursales = [Modelo(suc_cod, demanda_df, trabajadores_df, modo='escalonado')
                   for suc_cod in demanda_df.suc_cod.unique()]
 
     timer = stopwatch(show=True)
