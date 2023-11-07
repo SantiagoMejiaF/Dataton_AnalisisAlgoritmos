@@ -1,5 +1,6 @@
 import pandas as pd
 import pulp
+from .Parametros import Parametros as P
 
 
 class Services:
@@ -199,15 +200,19 @@ class modelo(pulp.LpProblem):
                                                  trabajadores,
                                                  franjas,
                                                  x,
-                                                 iniciosJornadas):
+                                                 iniciosJornadas,
+                                                 diaSemana):
+        duracionjornada = P.DURACIONJORNADATRABAJADORTC if diaSemana != 5 else P.DURACIONJORNADATRABAJADORSABADOTC
 
         for indexTrabajador in range(len(trabajadores)):
             i = trabajadores[indexTrabajador]
             franjaInicial = iniciosJornadas[indexTrabajador]
 
             # En construcción
-            # self += pulp.lpSum(x[(i, t)]
-            #                    for t in franjas[0:franjaInicial]) == 0
+            self += pulp.lpSum(x[(i, t)] for t in franjas) == duracionjornada
+            # Intervalos de 5 deben sumar 4 o 5 franjas trabajadas
+            for franja in franjas:
+                self += x[(i, franja)] + x[(i, franja + duracionjornada)] <= 1
 
     def agregarRestriccionNoTrabajaAntesInicioJornadaModelo(self,
                                                             trabajadores,
@@ -528,7 +533,7 @@ class modelo(pulp.LpProblem):
             step
         )
 
-        if step in [None, 'Almuerzos']:
+        if step in [None, 'Almuerzos', 'Pausas']:
             self.restriccionesAlmuerzos(
                 trabajadores,
                 tipoContrato,
@@ -887,7 +892,11 @@ class Sucursal_pulp:
                 step=step
             )
             self.df_optimo = df_optimo
-            self.iniciosJornadas, self.iniciosAlmuerzos, self.iniciosSabados = self.Inicios_df_optimo()
+
+            inicios_solucion = self.Inicios_df_optimo()
+            self.iniciosJornadas = inicios_solucion['Trabaja']
+            self.iniciosAlmuerzos = inicios_solucion['Almuerza']
+            self.iniciosSabados = inicios_solucion['Sabado']
 
         self._sobredemanda.append(demanda)
 
@@ -936,7 +945,7 @@ class Sucursal_pulp:
 
         self._sobredemanda.append(demanda)
 
-    def Inicios_df_optimo(self):
+    def Inicios_df_optimo(self) -> (list, list, list):
         inicios = {}
 
         def hora2franja(hora):
@@ -956,5 +965,7 @@ class Sucursal_pulp:
                 hora2franja(inicios_estado[trabajador])
                 if trabajador in inicios_estado else -1
                 for trabajador in self.df_optimo.documento.unique()]
+
+        inicios['sabado'] =
 
         return inicios

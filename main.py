@@ -1,5 +1,5 @@
 from ejemplos.test_Restricciones_v010 import test_Restricciones_v01
-from src.PuLP.Etapa2.Modelo_PuLP import Sucursal_pulp as modelo_pulp
+from src.Modelo_PuLP import Sucursal_pulp as modelo_pulp
 from datetime import datetime
 from src.Servicios import stopwatch
 from src.Servicios import Dataset
