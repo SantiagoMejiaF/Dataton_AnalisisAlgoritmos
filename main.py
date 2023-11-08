@@ -3,6 +3,7 @@ from src.Modelo_PuLP import Sucursal_pulp as modelo_pulp
 from datetime import datetime
 from src.Servicios import stopwatch
 from src.Servicios import Dataset
+from src.Servicios import crearCSVPowerBI
 from src.Servicios import result_output
 from src.Parametros import Parametros
 
@@ -50,6 +51,8 @@ def main(Modelo):
         result_output(file_name, "./resultados/"
                       ).crearCSVResultadoOptimo(sucursales)
 
+        solucion_path = "./resultados/" + file_name + ".csv"
+
         print('\nEl tiempo de ejecución: \nGlobal', end=" ")
         timer.current_time
         print('Iteración', end=" ")
@@ -57,6 +60,8 @@ def main(Modelo):
         print('La sobredemanda resultante es: ', sobredemanda, end="\n\n")
         i += 1
 
+    crearCSVPowerBI(demanda_df, solucion_path)
+    print('Optimización finalizada con éxito')
 
 if __name__ == "__main__":
     main(modelo_pulp)

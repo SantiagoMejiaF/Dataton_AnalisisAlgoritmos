@@ -1,7 +1,6 @@
 from datetime import datetime
 import pandas as pd
 
-
 class stopwatch:
     def __init__(self, show=False, name: str = "", end=None):
         self.start = datetime.now()
@@ -64,3 +63,20 @@ class result_output:
     def crearCSVResultadoOptimo(self, sucursales):
         csv = self.juntarSucursales(sucursales)
         csv.to_csv(self.path, index=False)
+
+def crearCSVPowerBI(df_demanda, ruta_solucion):
+    # ruta_solucion = '.\\resultados\\23.11.08.00.21.04-solucionOptimaEtapa2-1.csv'
+    df_solucion = pd.read_csv(ruta_solucion)
+    df_solucion['fecha_hora'] = df_solucion['fecha'] + ' ' + df_solucion['hora'] + ':00'
+
+    # Filtra las filas con estado 'Trabaja' y agrupa por 'suc_cod' y 'fecha_hora' sumando la capacidad
+    df = df_solucion[df_solucion['estado'] == 'Trabaja'].groupby(['suc_cod', 'fecha_hora'])['hora_franja'].count().reset_index()
+    df = df.rename(columns={'hora_franja': 'capacidad'})
+    df['fecha_hora'] = pd.to_datetime(df['fecha_hora'], format='%d/%m/%Y %H:%M:%S')
+
+    # Generar columna sobredemanda
+    df = df_demanda.merge(df, on=['suc_cod', 'fecha_hora'], how='inner')
+    df['sobredemanda'] = df['demanda'] - df['capacidad']
+
+    # Guardar csv
+    df.to_csv('.\\visualización\\solucion.csv', date_format='%d/%m/%Y %H:%M:%S', index=False)
