@@ -1,5 +1,5 @@
 from ejemplos.test_Restricciones_v010 import test_Restricciones_v01
-from src.PuLP.Etapa2.Modelo_PuLP import Sucursal_pulp as modelo_pulp
+from src.Modelo_PuLP import Sucursal_pulp as modelo_pulp
 from datetime import datetime
 from src.Servicios import stopwatch
 from src.Servicios import Dataset
@@ -10,11 +10,16 @@ from src.Parametros import Parametros
 def main(Modelo):
 
     demanda_df, trabajadores_df = Dataset(
-        # './Datasets/Dataton 2023 Etapa 2.xlsx')
-        './Datasets/Dataton 2023 Etapa 2 - simplificada.xlsx')
+        './Datasets/Dataton 2023 Etapa 2.xlsx')
+    # './Datasets/Dataton 2023 Etapa 2 - simplificada.xlsx')
 
-    sucursales = [Modelo(suc_cod, demanda_df, trabajadores_df)
-                  for suc_cod in demanda_df.suc_cod.unique()]
+    sucursales = [
+        Modelo(suc_cod,
+               demanda_df,
+               trabajadores_df,
+               # modo='escalonado'
+               )
+        for suc_cod in demanda_df.suc_cod.unique()]
 
     timer = stopwatch(show=True)
     i = 0
@@ -51,4 +56,3 @@ def main(Modelo):
 
 if __name__ == "__main__":
     main(modelo_pulp)
-    # test_Restricciones_v01()
