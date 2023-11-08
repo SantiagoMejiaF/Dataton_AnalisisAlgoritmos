@@ -23,7 +23,10 @@ def main(Modelo):
 
     timer = stopwatch(show=True)
     i = 0
-    while Modelo.iteracion():
+    prev_sobredemanda = None
+    sobredemanda = 0
+    while Modelo.iteracion() and sobredemanda != prev_sobredemanda:
+        prev_sobredemanda = sobredemanda
         sobredemanda = 0
 
         timer.add_subtimer("Iteracion", end="")
@@ -39,12 +42,13 @@ def main(Modelo):
         sobredemanda = sum([sucursal.sobredemanda
                             for sucursal in sucursales])
 
-        result_output("-".join([
+        file_name = "-".join([
             datetime.now().strftime("%y.%m.%d.%H.%M.%S"),
             "solucionOptimaEtapa2",
-            str(i)
-        ]), "./resultados/"
-        ).crearCSVResultadoOptimo(sucursales)
+            str(i)])
+
+        result_output(file_name, "./resultados/"
+                      ).crearCSVResultadoOptimo(sucursales)
 
         print('\nEl tiempo de ejecución: \nGlobal', end=" ")
         timer.current_time
