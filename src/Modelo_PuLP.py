@@ -1096,6 +1096,5 @@ class Sucursal_pulp:
         )
 
         self.df_optimo = df_optimo
-        iniciosJornadas, iniciosAlmuerzos, iniciosSabados = self.Inicios_df_optimo()
 
         self._sobredemanda.append(demanda)
