@@ -273,6 +273,9 @@ class modelo(pulp.LpProblem):
             for franja in franjas[:len(franjas) - duracionjornada]:
                 # Validar si se debe sumar 1 o no
                 self += x[(i, franja)] + x[(i, franja + duracionjornada)] <= 1
+            for franja in franjas[::-1][:len(franjas) - duracionjornada]:
+                # Validar si se debe sumar 1 o no
+                self += x[(i, franja)] + x[(i, franja - duracionjornada)] <= 1
 
     def agregarRestriccionDuracionAlmuerzoInicial(self,
                                                   trabajadores,
@@ -477,11 +480,6 @@ class modelo(pulp.LpProblem):
             tiempoMaxMT,
             step):
 
-        # Cada trabajador tiene que trabajar unas horas al dia determinadas por el tipo de contrato
-        # Pero hay que tener en cuenta que hay pausas activas. Entonces esas franjas son la referencias maximas.
-        self.agregarRestriccionFranjasTrabajadasModelo(
-            trabajadores, tipoContrato, franjas, self.x, tiempoMaxTC, tiempoMaxMT)
-
         # Cada franja debe ser atendida por al menos un trabajador (Solo si la demanda es mayor o igual a 1)
         self.agregarRestriccionFranjaAtendidaTrabajadorModelo(
             trabajadores, franjas, demanda_clientes, self.x)
@@ -512,6 +510,11 @@ class modelo(pulp.LpProblem):
                                                            self.x,
                                                            iniciosJornadas,
                                                            diaSemana)
+
+        # Cada trabajador tiene que trabajar unas horas al dia determinadas por el tipo de contrato
+        # Pero hay que tener en cuenta que hay pausas activas. Entonces esas franjas son la referencias maximas.
+        self.agregarRestriccionFranjasTrabajadasModelo(
+            trabajadores, tipoContrato, franjas, self.x, tiempoMaxTC, tiempoMaxMT)
 
         # Cada trabajador no puede trabajar antes de su jornada inicio
         self.agregarRestriccionNoTrabajaAntesInicioJornadaModelo(
@@ -918,18 +921,22 @@ def optimizaciónJornadasSucursal(
                                          diaSemana,
                                          step)
 
-            inicios = Services.Inicios_df_optimo(suc_cod,
-                                                 Services.crear_df_optimo(
-                                                     solucionOptimaSucursal_df,
-                                                     trabajadores,
-                                                     tipoContrato,
-                                                     franjas,
-                                                     iniciosAlmuerzos,
-                                                     fecha_hora,
-                                                     suc_cod,
-                                                     fecha_actual,
-                                                     diaSemana,
-                                                     problem.x))
+            df_optimo_fecha = Services.crear_df_optimo(
+                solucionOptimaSucursal_df,
+                trabajadores,
+                tipoContrato,
+                franjas,
+                iniciosAlmuerzos,
+                fecha_hora,
+                suc_cod,
+                fecha_actual,
+                diaSemana,
+                problem.x)
+
+            inicios = Services.Inicios_df_optimo(suc_cod, df_optimo_fecha)
+
+            # df_optimo_fecha.to_csv(
+            #     "./resultados/"+str(suc_cod)+fecha_actual.strftime(".%d.%m.%Y")+pulp.LpStatus[problem.status]+step + ".csv")
 
             if step and 'Trabaja' in inicios[fecha_actual.strftime("%d/%m/%Y")]:
                 iniciosJornadas = inicios[fecha_actual.strftime(
@@ -960,7 +967,6 @@ def optimizaciónJornadasSucursal(
             demanda_df_sucursal, solucionOptimaSucursal_df)
     else:
         sobredemanda = 1000000
-        print(modo, estadosModelosSucursal)
 
     return sobredemanda, solucionOptimaSucursal_df
 

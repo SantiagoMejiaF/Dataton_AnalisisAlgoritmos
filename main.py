@@ -13,8 +13,13 @@ def main(Modelo):
         './Datasets/Dataton 2023 Etapa 2.xlsx')
     # './Datasets/Dataton 2023 Etapa 2 - simplificada.xlsx')
 
-    sucursales = [Modelo(suc_cod, demanda_df, trabajadores_df, modo='escalonado')
-                  for suc_cod in demanda_df.suc_cod.unique()]
+    sucursales = [
+        Modelo(suc_cod,
+               demanda_df,
+               trabajadores_df,
+               # modo='escalonado'
+               )
+        for suc_cod in demanda_df.suc_cod.unique()]
 
     timer = stopwatch(show=True)
     i = 0
@@ -51,4 +56,3 @@ def main(Modelo):
 
 if __name__ == "__main__":
     main(modelo_pulp)
-    # test_Restricciones_v01()

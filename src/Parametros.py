@@ -14,7 +14,7 @@ class Parametros:
     # DURACIONJORNADATRABAJADORSABADOMT = 16
     DURACIONJORNADATRABAJADOR = {'TC': {'SEMANA': 34,
                                         'SABADO': 20},
-                                 'MT': {'SEMANA': 34,
+                                 'MT': {'SEMANA': 16,
                                         'SABADO': 16}}
     DURACIONTURNOTRABAJADOR = {'TC': {'SEMANA': 28,
                                       'SABADO': 16},
